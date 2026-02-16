@@ -1,7 +1,10 @@
 <?php
 
+use App\Http\Controllers\AdminMerchantController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\GoogleAuthController;
+use App\Http\Controllers\MerchantController;
+use App\Http\Controllers\SkillController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -25,3 +28,16 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
 Route::get('auth/google', [GoogleAuthController::class, 'redirectToGoogle']);
 Route::get('auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback']);
+
+//attaching and detaching skills
+Route::post('merchants/{merchant}/skills',[SkillController::class, 'attachToMerchant']);
+Route::delete('merchants/{merchant}/skills/{skill}',[SkillController::class, 'detachFromMerchant']);
+
+//merchants
+Route::apiResource('merchants', MerchantController::class);
+Route::apiResource('skills', SkillController::class);
+
+// Admin-only merchant actions
+Route::put('admin/merchants/{merchant}', [AdminMerchantController::class, 'update']);
+Route::post('admin/merchants/{merchant}/verify', [AdminMerchantController::class, 'verify']);
+Route::post('admin/merchants/{merchant}/suspend', [AdminMerchantController::class, 'suspend']);

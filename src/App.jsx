@@ -1,18 +1,16 @@
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import Home from "./components/Home";
 import "./index.css";
-function App() {
-  return (
-    <div className="flex flex-col min-h-screen">
-      <Navbar />
-      
-      <div className="grow p-4">
-        {/* Your page content goes here */}
-      </div>
-      <Footer />
 
+export default function App() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      <Navbar />
+      <main>
+      <Home />
+      </main>
+      <Footer />
     </div>
   );
 }
-
-export default App;

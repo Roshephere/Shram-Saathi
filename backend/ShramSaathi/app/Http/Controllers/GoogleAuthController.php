@@ -13,6 +13,7 @@ use Laravel\Socialite\Facades\Socialite;
 class GoogleAuthController extends Controller
 {
     public function redirectToGoogle(){
+        // $url = Socialite::driver('google')->stateless()->redirect()->getTargetUrl();
         $url = Socialite::driver('google')->stateless()->redirect()->getTargetUrl();
         return response()->json([
             'url'=> $url
@@ -63,7 +64,7 @@ class GoogleAuthController extends Controller
             // Alternative: Return JSON (if handling callback via API)
              return response()->json([
                 'success' => true,
-                'message'=> 'User logged in successfully.'
+                'message'=> 'User logged in successfully.',
                 'token' => $token,
                 'user' => [
                     'id' => $user->id,

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Merchant;
 use App\Models\Skill;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class MerchantController extends Controller
 {
@@ -24,7 +25,7 @@ class MerchantController extends Controller
             $path = $request->file('logo')->store('logos', 'public');
             $validated['logo'] = $path;
         }
-        $validated['status']= 'pending',
+        $validated['status']= 'pending';
 
         $merchant = Merchant::create($validated);
 
@@ -73,5 +74,15 @@ class MerchantController extends Controller
             'success'=> true,
             'message'=> 'Merchant successfully deleted.',
         ]);
+    }
+
+    public function index(){
+        return Cache::remember('merchant',60, function(){
+            return Merchant::all();
+        });
+    }
+
+    public function allWithoutCaching(){
+        return Merchant::all();
     }
 }

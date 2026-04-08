@@ -6,6 +6,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CookieController;
 use App\Http\Controllers\FaqController;
 use App\Http\Controllers\GoogleAuthController;
+use App\Http\Controllers\MerchantCategoryController;
 use App\Http\Controllers\MerchantController;
 use App\Http\Controllers\SkillController;
 use App\Models\User;
@@ -53,6 +54,10 @@ Route::delete('merchants/{merchant}/skills/{skill}',[SkillController::class, 'de
 Route::apiResource('merchants', MerchantController::class);
 Route::apiResource('skills', SkillController::class);
 Route::apiResource('faqs', FaqController::class);
+
+
+//merchant categories
+Route::get('merchant-categories', [MerchantCategoryController::class, 'index']);
 
 // Admin-only merchant actions
 Route::put('admin/merchants/{merchant}', [AdminMerchantController::class, 'update']);

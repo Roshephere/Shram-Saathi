@@ -20,6 +20,8 @@ return new class extends Migration
             $table->string('phone')->nullable();
             $table->string('logo')->nullable();
             $table->string('pan_no')->nullable();
+            $table->decimal('avg_rating',4,2)->default(0);
+            $table->decimal('hourly_rate',12,2)->nullable();
             $table->string('location')->nullable();
             $table->enum('status', ['pending', 'active', 'suspended'])->default('pending');
 

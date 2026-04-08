@@ -17,6 +17,8 @@ class MerchantController extends Controller
             'phone' => 'nullable|string|max:255',
             'pan_no' => 'nullable|string|max:255',
             'logo' => 'nullable|string|max:50',
+            'avg_rating' => 'nullable|numeric|min:0|max:5',
+            'hourly_rate' => 'nullable|string',
             'location' => 'nullable|string|max:255',
             'extras' => 'nullable|array',
             // 'status' => 'in:pending,active,suspended',
@@ -25,7 +27,7 @@ class MerchantController extends Controller
             $path = $request->file('logo')->store('logos', 'public');
             $validated['logo'] = $path;
         }
-        $validated['status']= 'pending';
+        $validated['status'] = 'pending';
 
         $merchant = Merchant::create($validated);
 
@@ -51,6 +53,8 @@ class MerchantController extends Controller
             'phone' => 'nullable|string|max:255',
             'pan_no' => 'nullable|string|max:255',
             'logo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'avg_rating' => 'nullable|numeric|min:0|max:5',
+            'hourly_rate' => 'nullable|string',
             'location' => 'nullable|string|max:255',
             'extras' => 'nullable|array',
             // 'status' => 'in:pending,active,suspended',
@@ -67,22 +71,25 @@ class MerchantController extends Controller
         ]);
     }
 
-    public function destroy(Merchant $merchant){
+    public function destroy(Merchant $merchant)
+    {
         $merchant->delete();
 
         return response()->json([
-            'success'=> true,
-            'message'=> 'Merchant successfully deleted.',
+            'success' => true,
+            'message' => 'Merchant successfully deleted.',
         ]);
     }
 
-    public function index(){
-        return Cache::remember('merchant',60, function(){
+    public function index()
+    {
+        return Cache::remember('merchant', 60, function () {
             return Merchant::all();
         });
     }
 
-    public function allWithoutCaching(){
+    public function allWithoutCaching()
+    {
         return Merchant::all();
     }
 }

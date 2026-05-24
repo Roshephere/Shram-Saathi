@@ -4,7 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class FaqRequest extends FormRequest
+class MerchantCategoryRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,10 +22,10 @@ class FaqRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'question'=>'required|string|max:255',
-            'answer'=> 'required|string',
-            'order'=> 'nullable|integer',
-            'status'=>'boolean|nullable',
+            'merchant_id'=> 'requried|exits:merchants,id',
+            'category_id'=> 'required|exists:service_categories,id',
+            'is_primary' => 'boolean',
+            'extras'=> 'array',
         ];
     }
 }

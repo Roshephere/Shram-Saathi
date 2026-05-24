@@ -12,6 +12,7 @@ class ServiceCategory extends Model
         'slug',
         'description',
         'is_active',
+        'order',
         'extras',
     ];
 
@@ -22,7 +23,22 @@ class ServiceCategory extends Model
     }
 
     public function category(){
-        return $this->hasOne(ServiceCategory::class);
+        return $this->hasOne(ServiceCategory::class, 'parent_id');
+    }
+
+    public function merchants(){
+        return $this->belongsToMany(Merchant::class, 'merchant_service_categories', 'merchant_id')->withPivot([
+            'base_rate', 
+            'experience_levels'
+        ])->withTimestamps();
+    }
+
+    public function parent(){
+        return $this->belongsTo(ServiceCategory::class, 'parent_id');
+    }
+
+    public function children(){
+        return $this->hasMany(ServiceCategory::class, 'parent_id');
     }
 
 }

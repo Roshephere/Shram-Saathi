@@ -9,6 +9,7 @@ class ServiceRequest extends Model
     protected $fillable = [
         'user_id',
         'category_id',
+        'user_location_id',
         'title',
         'description',
         'budget_min',
@@ -39,5 +40,13 @@ class ServiceRequest extends Model
 
     public function category(){
         return $this->belongsTo(ServiceCategory::class);
+    }
+
+    public function userLocation(){
+        return $this->belongsTo(UserLocation::class);
+    }
+
+    public function serviceCategory(){
+        return $this->belongsTo(ServiceCategory::class, 'category_id');
     }
 }

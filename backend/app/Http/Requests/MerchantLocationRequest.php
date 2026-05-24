@@ -4,7 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class FaqRequest extends FormRequest
+class MerchantLocationRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,10 +22,15 @@ class FaqRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'question'=>'required|string|max:255',
-            'answer'=> 'required|string',
-            'order'=> 'nullable|integer',
-            'status'=>'boolean|nullable',
+            'merchant_id' =>'required|exists:merchants,id',
+            'label' => 'required|string|max:255',
+            'country' => 'required|string|max:255',
+            'address' => 'required|string|max:255',
+            'latitude' => 'required|numeric',
+            'longitude' => 'required|numeric',
+            'is_primary' => 'boolean',
+            'is_active' => 'boolean',
+            'extras' => 'nullable|array',
         ];
     }
 }

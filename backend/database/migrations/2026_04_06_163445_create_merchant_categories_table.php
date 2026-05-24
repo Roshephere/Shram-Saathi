@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('merchant_categories', function (Blueprint $table) {
             $table->id();
             $table->foreignId('merchant_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('category_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('category_id')->constrained('service_categories')->cascadeOnDelete();
             $table->boolean('is_primary')->default(true);
             $table->json('extras')->nullable();
             $table->timestamps();

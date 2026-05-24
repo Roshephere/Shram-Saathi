@@ -2,17 +2,26 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\MerchantLocationRequest;
+use App\Models\Merchant;
+use App\Models\MerchantLocation;
 use App\Models\MerchantLocations;
+use App\Services\MerchantLocationService;
 use Illuminate\Http\Request;
 
 class MerchantLocationsController extends Controller
 {
+
+    public function __construct(protected MerchantLocationService $merchantLocationService){
+
+    }
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        //
+        $location = $this->merchantLocationService->getAll();
+        return  $this->success($location, $location->isEmpty() ? 'No records found for merchant locations.' : 'Merchant location obtained successfully.');
     }
 
     /**
@@ -20,29 +29,33 @@ class MerchantLocationsController extends Controller
      */
     public function create()
     {
+
         //
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(MerchantLocationRequest $request)
     {
-        //
+        $location =$this->merchantLocationService->createMerchantLocation($request->validated());
+        return $this->success($location, 'Merchant location created successfully.', 201);
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(MerchantLocations $merchantLocations)
+    public function show(MerchantLocation $merchantLocations)
     {
-        //
+        $id = $merchantLocations->id;
+        $location = $this->merchantLocationService->getById($id);
+        return $this->success($location, 'Merchant location obtained successfully.');
     }
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(MerchantLocations $merchantLocations)
+    public function edit(MerchantLocation $merchantLocations)
     {
         //
     }
@@ -50,16 +63,20 @@ class MerchantLocationsController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, MerchantLocations $merchantLocations)
+    public function update(Request $request, MerchantLocation $merchantLocations)
     {
-        //
+        $id = $merchantLocations->id;
+        $location = $this->merchantLocationService->updateMerchantLocation($id, $request->validated());
+        return $this->success($location, 'Merchant location updated successfully.');
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(MerchantLocations $merchantLocations)
+    public function destroy(MerchantLocation $merchantLocations)
     {
-        //
+        $id = $merchantLocations->id;
+        $this->merchantLocationService->deleteMerchantLocation($id);
+        return $this->success(null, 'Merchant location deleted successfully.');
     }
 }

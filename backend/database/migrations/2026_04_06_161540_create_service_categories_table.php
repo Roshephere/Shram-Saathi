@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('slug',120)->nullable();
             $table->text('description')->nullable();
             $table->boolean('is_active')->default(true);
+            $table->integer('order')->default(0);
             $table->json('extras')->nullable();
             $table->timestamps();
         });

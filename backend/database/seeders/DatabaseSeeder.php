@@ -21,5 +21,7 @@ class DatabaseSeeder extends Seeder
         // ]);
 
         $this->call(ArticalSeeder::class);
+        
+        $this->call([MerchantSeeder::class, MerchantServiceCategorySeeder::class,]);
     }
 }

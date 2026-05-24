@@ -26,7 +26,10 @@ class User extends Authenticatable
         'phone',
         'status',
         'google_id',
-        'email_verified_at'
+        'email_verified_at',
+        'registration_step',
+        'registration_status',
+        'registration_completed_at',
     ];
 
     /**
@@ -50,11 +53,39 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'status'=> 'boolean',
+            'status' => 'boolean',
         ];
     }
 
-    public function merchant(){
+    public function merchant()
+    {
         return $this->hasOne(Merchant::class);
     }
+
+
+    public function isRegistrationComplete(): bool
+    {
+        return $this->registration_status === 'complete';
+    }
+
+    public function getRegistrationStep(): int
+    {
+        return $this->registration_step;
+    }
+
+    public function locations()
+    {
+        return $this->hasMany(UserLocation::class);
+    }
+
+    public function primaryLocation()
+    {
+        return $this->hasOne(UserLocation::class)->where('is_primary', true)->where('is_active', true);
+    }
+
+    public function serviceRequests()
+    {
+        return $this->hasMany(ServiceRequest::class);
+    }
+
 }

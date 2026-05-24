@@ -2,64 +2,51 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\RecommendationModel;
+use App\Services\RecommendationService;
+use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 
 class RecommendationModelController extends Controller
 {
+    use ApiResponse;
+
+    public function __construct(protected RecommendationService $recommendationService)
+    {}
+
     /**
-     * Display a listing of the resource.
+     * Get recommended workers for a service request
+     * GET /recommendations/service-request/{serviceRequestId}
      */
-    public function index()
+    public function getForServiceRequest($serviceRequestId, Request $request)
     {
-        //
+        $maxDistance = $request->query('max_distance', 50); // Default 50km
+        $limit = $request->query('limit', 5);
+
+        $recommendations = $this->recommendationService->getRecommendedWorkers(
+            $serviceRequestId,
+            $limit,
+            $maxDistance
+        );
+
+        return $this->success(
+            $recommendations,
+            'Recommended workers retrieved'
+        );
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Get workers by category (no distance filter)
+     * GET /recommendations/category/{categoryId}
      */
-    public function create()
+    public function getByCategory($categoryId, Request $request)
     {
-        //
-    }
+        $limit = $request->query('limit', 10);
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
+        $workers = $this->recommendationService->getWorkersByCategory($categoryId, $limit);
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(RecommendationModel $recommendationModel)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(RecommendationModel $recommendationModel)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, RecommendationModel $recommendationModel)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(RecommendationModel $recommendationModel)
-    {
-        //
+        return $this->success(
+            $workers,
+            'Workers retrieved'
+        );
     }
 }

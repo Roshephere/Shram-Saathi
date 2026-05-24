@@ -57,6 +57,13 @@ class User extends Authenticatable
         ];
     }
 
+    protected $appends = ['role'];
+
+    public function getRoleAttribute()
+    {
+        return $this->getRoleNames()->first() ?? 'customer';
+    }
+
     public function merchant()
     {
         return $this->hasOne(Merchant::class);

@@ -1,8 +1,10 @@
 <?php
 
+use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AdminMerchantController;
 use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BookingController;
 use App\Http\Controllers\CookieController;
 use App\Http\Controllers\FaqController;
 use App\Http\Controllers\GoogleAuthController;
@@ -10,8 +12,10 @@ use App\Http\Controllers\MerchantCategoryController;
 use App\Http\Controllers\MerchantController;
 use App\Http\Controllers\MerchantRegistrationController;
 use App\Http\Controllers\MerchantServiceCategoryController;
+use App\Http\Controllers\ServiceRequestsController;
 use App\Http\Controllers\SkillController;
 use App\Http\Controllers\ServiceCategoryController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserLocationController;
 use App\Http\Controllers\RecommendationModelController;
 use Illuminate\Http\Request;
@@ -40,6 +44,12 @@ Route::get('/login', function () {
 Route::get('/articles', [ArticleController::class, 'index']);
 Route::get('/articles/withoutCache', [ArticleController::class, 'allWithoutCache']);
 
+Route::get('give-role', function () {
+    $user = \App\Models\User::find(1);
+    $user->assignRole('admin');
+    return 'Permission granted';
+});
+
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -51,6 +61,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/worker/registration/status/{userId}', [MerchantRegistrationController::class, 'checkStatus']);
     Route::post('/worker/register/step2/{userId}', [MerchantRegistrationController::class, 'step2']);
     Route::post('/worker/register/step3/{merchantId}', [MerchantRegistrationController::class, 'step3']);
+
+    Route::get('/users',[UserController::class, 'index']);
 
     // Service categories create
     Route::get('/service-categories', [ServiceCategoryController::class, 'index']);
@@ -65,11 +77,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::put('/user/locations/{locationId}', [UserLocationController::class, 'update']);
     Route::delete('/user/locations/{locationId}', [UserLocationController::class, 'destroy']);
 
-    
-    });
-    // Recommendations
-    Route::get('/recommendations/service-request/{serviceRequestId}', [RecommendationModelController::class, 'getForServiceRequest']);
-    Route::get('/recommendations/category/{categoryId}', [RecommendationModelController::class, 'getByCategory']);
+    Route::apiResource('service-requests', ServiceRequestsController::class);
+    Route::get('service-requests/user/list', [ServiceRequestsController::class, 'userRequests']);
+
+
+});
+// Recommendations
+Route::get('/recommendations/service-request/{serviceRequestId}', [RecommendationModelController::class, 'getForServiceRequest']);
+Route::get('/recommendations/category/{categoryId}', [RecommendationModelController::class, 'getByCategory']);
 
 
 Route::get('auth/google', [GoogleAuthController::class, 'redirectToGoogle'])->name('auth.google.redirect');
@@ -81,7 +96,7 @@ Route::delete('merchants/{merchant}/skills/{skill}', [SkillController::class, 'd
 
 //merchants
 Route::apiResource('merchants', MerchantController::class);
-Route::apiResource('skills', SkillController::class);
+// Route::apiResource('skills', SkillController::class);
 Route::apiResource('faqs', FaqController::class);
 
 // Merchant Service Categories Management
@@ -110,4 +125,22 @@ Route::get('set-cookie', [CookieController::class, 'handleSetCookie']);
 Route::get('delete-cookie', [CookieController::class, 'deleteCookie']);
 Route::get('theme-set', function () {
     return response()->json(['theme'])->cookie('theme', 'red', 60);
+});
+
+// Booking routes
+Route::apiResource('bookings', BookingController::class)->except(['edit', 'create']);
+Route::put('bookings/{id}/accept', [BookingController::class, 'accept']);
+Route::put('bookings/{id}/reject', [BookingController::class, 'reject']);
+Route::put('bookings/{id}/complete', [BookingController::class, 'complete']);
+Route::get('merchant/bookings', [BookingController::class, 'merchantBookings']);
+
+// Admin routes
+Route::middleware('is_admin')->prefix('admin')->group(function () {
+    Route::get('merchants/pending', [AdminController::class, 'getPendingMerchants']);
+    Route::put('merchants/{merchantId}/verify', [AdminController::class, 'verifyMerchant']);
+    Route::put('merchants/{merchantId}/reject', [AdminController::class, 'rejectMerchant']);
+    Route::put('merchants/{merchantId}/suspend', [AdminController::class, 'suspendMerchant']);
+    
+    Route::get('transactions', [AdminController::class, 'getTransactions']);
+    Route::get('dashboard', [AdminController::class, 'getDashboard']);
 });

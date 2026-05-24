@@ -79,3 +79,4 @@ class FaqController extends Controller
         );
     }
 }
+

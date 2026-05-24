@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Merchant extends Model
 {
-    protected $fillable = ['user_id', 'business_name', 'phone', 'logo', 'pan_no', 'location', 'status', 'avg_rating', 'hourly_rate', 'extras', 'verified_at'];
+    protected $fillable = ['user_id', 'business_name', 'phone', 'logo', 'pan_no', 'location', 'status', 'avg_rating', 'hourly_rate', 'extras', 'verified_at', 'verified_by'];
 
     protected $casts = [
         'extras' => 'array',
@@ -94,5 +94,9 @@ class Merchant extends Model
 
     public function getReviewCount(){
         return $this->reviews()->where('is_verified', true)->count();
+    }
+
+    public function verifiedBy(){
+        return $this->belongsTo(User::class, 'verified_by');
     }
 }

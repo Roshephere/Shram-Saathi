@@ -12,12 +12,18 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        $middleware->api(prepend: [
-            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
-        ]);
+        // Note: Token-based auth (Bearer tokens) is used.
+        // EnsureFrontendRequestsAreStateful is NOT prepended globally
+        // to avoid CSRF token mismatch on API routes.
+        // If switching to SPA cookie auth, add:
+        // \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+        // 'is_admin' => \App\Http\Middleware\IsAdmin::class,
+        // is admin middleware is added to route groups that require admin access.
+
 
         $middleware->alias([
             'verified' => \App\Http\Middleware\EnsureEmailIsVerified::class,
+            'is_admin' => \App\Http\Middleware\IsAdmin::class,
         ]);
 
         //

@@ -20,4 +20,9 @@ class UserController extends Controller
         $user = $this->userService->getById($id);
         return $this->success($user, 'User retrived Successfully. ', 200);
     }
+
+    public function destroy(int $id){
+        $this->userService->deleteUser($id);
+        return $this->success(null, 'User deleted successfully.', 200);
+    }
 }

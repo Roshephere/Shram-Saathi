@@ -1,18 +1,64 @@
-# React + Vite
+# Shram-Saathi Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + Vite frontend for the Shram-Saathi local service marketplace.
 
-Currently, two official plugins are available:
+## Setup
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+```bash
+npm install
+cp .env.example .env
+```
 
-## React Compiler
+Configure `VITE_API_BASE_URL` in `.env` (default: `http://localhost:8000/api`).
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+## Development
 
-Note: This will impact Vite dev & build performances.
+```bash
+npm run dev
+```
 
-## Expanding the ESLint configuration
+## Build
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```bash
+npm run build
+```
+
+## Tech Stack
+
+- React 19 + Vite
+- Tailwind CSS v4
+- React Router DOM
+- TanStack Query
+- Axios
+- React Hot Toast
+- Lucide React Icons
+
+## Project Structure
+
+```
+src/
+  api/          - API client and service modules
+  components/
+    ui/         - Reusable UI components
+  constants/    - Role, status, route constants
+  context/      - Auth context provider
+  hooks/        - Custom hooks (useAuth)
+  layouts/      - Public and dashboard layouts
+  pages/
+    public/     - Landing, Login, Register
+    customer/   - Customer dashboard and pages
+    merchant/   - Merchant dashboard and pages
+    admin/      - Admin panel pages
+```
+
+## Role Detection
+
+The backend uses Spatie Laravel Permission with roles: `customer`, `worker`, `admin`.
+The User model appends a `role` attribute to JSON responses for frontend role detection.
+
+## Pending Backend Endpoints
+
+- `GET /api/users` — User listing (admin)
+- `GET|POST|PUT|DELETE /api/service-requests` — Service request CRUD (controller is a stub)
+- `GET|POST|PUT|DELETE /api/merchant-reviews` — Review CRUD (controller is a stub)
+- `GET|POST|PUT|DELETE /api/bookings` — Booking management (no model/controller exists)

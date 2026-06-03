@@ -14,46 +14,60 @@ class BookingController extends Controller
 
     public function __construct(protected BookingService $bookingService)
     {
-        $this->middleware('auth:sanctum');
     }
 
     /**
-     * Create booking - POST /bookings
+     * Merchant creates a bid - POST /bookings
      */
     public function store(StoreBookingRequest $request): JsonResponse
     {
         try {
             $validated = $request->validated();
-            $booking = $this->bookingService->createBooking(
+            $merchantId = auth()->user()->merchant->id;
+
+            $booking = $this->bookingService->createBid(
                 $validated['service_request_id'],
-                auth()->id(),
-                $validated['merchant_id'],
-                $validated['agreed_rate'],
+                $merchantId,
+                $validated['proposed_rate'],
                 $validated
             );
 
-            return $this->success($booking, 'Booking created. Worker will be notified.', 201);
+            return $this->success($booking, 'Bid submitted successfully!', 201);
         } catch (\Exception $e) {
             return $this->error($e->getMessage(), 400);
         }
     }
 
     /**
-     * Get customer's bookings - GET /bookings
+     * Get bids for a service request - GET /bookings?service_request_id={id}
      */
     public function index(Request $request): JsonResponse
     {
         try {
-            $bookings = $this->bookingService->getCustomerBookings(auth()->id(), $request->only(['status']));
+            $serviceRequestId = $request->query('service_request_id');
             
-            return $this->success($bookings->items(), 'Bookings retrieved successfully', 200, [
-                'pagination' => [
-                    'total' => $bookings->total(),
-                    'per_page' => $bookings->perPage(),
-                    'current_page' => $bookings->currentPage(),
-                    'last_page' => $bookings->lastPage(),
+            if (!$serviceRequestId) {
+                return $this->error('service_request_id parameter required', 400);
+            }
+
+            $bids = $this->bookingService->getRequestBids(
+                $serviceRequestId,
+                $request->only(['status'])
+            );
+
+            return $this->success(
+                $bids->items(),
+                'Bids retrieved successfully',
+                200,
+                [
+                    'pagination' => [
+                        'total' => $bids->total(),
+                        'per_page' => $bids->perPage(),
+                        'current_page' => $bids->currentPage(),
+                        'last_page' => $bids->lastPage(),
+                    ]
                 ]
-            ]);
+            );
         } catch (\Exception $e) {
             return $this->error($e->getMessage(), 400);
         }
@@ -68,7 +82,7 @@ class BookingController extends Controller
             $booking = $this->bookingService->getBookingById($id);
             $userId = auth()->id();
 
-            if ($booking->customer_id !== $userId && $booking->merchant_id !== $userId) {
+            if ($booking->customer_id !== $userId && $booking->merchant_id !== auth()->user()->merchant?->id) {
                 return $this->error('Unauthorized to view this booking.', 403);
             }
 
@@ -79,45 +93,39 @@ class BookingController extends Controller
     }
 
     /**
-     * Worker accepts booking - PUT /bookings/{id}/accept
+     * Customer accepts a bid - PUT /bookings/{id}/accept
      */
     public function accept(int $id): JsonResponse
     {
         try {
-            $merchant = auth()->user()->merchant;
-
-            if (!$merchant) {
-                return $this->error('Only merchants can accept bookings.', 403);
-            }
-
-            $booking = $this->bookingService->acceptBooking($id, $merchant->id);
-            return $this->success($booking, 'Booking accepted successfully.', 200);
+            $booking = $this->bookingService->acceptBid($id, auth()->id());
+            return $this->success($booking, 'Bid accepted! Work will begin shortly.', 200);
         } catch (\Exception $e) {
             return $this->error($e->getMessage(), 400);
         }
     }
 
     /**
-     * Worker rejects booking - PUT /bookings/{id}/reject
+     * Merchant starts work - PUT /bookings/{id}/start
      */
-    public function reject(int $id): JsonResponse
+    public function start(int $id): JsonResponse
     {
         try {
             $merchant = auth()->user()->merchant;
 
             if (!$merchant) {
-                return $this->error('Only merchants can reject bookings.', 403);
+                return $this->error('Only merchants can start work.', 403);
             }
 
-            $booking = $this->bookingService->rejectBooking($id, $merchant->id);
-            return $this->success($booking, 'Booking rejected successfully.', 200);
+            $booking = $this->bookingService->startWork($id, $merchant->id);
+            return $this->success($booking, 'Work started successfully.', 200);
         } catch (\Exception $e) {
             return $this->error($e->getMessage(), 400);
         }
     }
 
     /**
-     * Worker completes booking - PUT /bookings/{id}/complete
+     * Merchant completes work - PUT /bookings/{id}/complete
      */
     public function complete(int $id): JsonResponse
     {
@@ -125,24 +133,43 @@ class BookingController extends Controller
             $merchant = auth()->user()->merchant;
 
             if (!$merchant) {
-                return $this->error('Only merchants can complete bookings.', 403);
+                return $this->error('Only merchants can complete work.', 403);
             }
 
-            $booking = $this->bookingService->completeBooking($id, $merchant->id);
-            return $this->success($booking, 'Booking marked as completed.', 200);
+            $booking = $this->bookingService->completeWork($id, $merchant->id);
+            return $this->success($booking, 'Work marked as completed.', 200);
         } catch (\Exception $e) {
             return $this->error($e->getMessage(), 400);
         }
     }
 
     /**
-     * Cancel booking (customer) - DELETE /bookings/{id}
+     * Merchant rejects a bid - PUT /bookings/{id}/reject
+     */
+    public function reject(int $id): JsonResponse
+    {
+        try {
+            $merchant = auth()->user()->merchant;
+
+            if (!$merchant) {
+                return $this->error('Only merchants can reject bids.', 403);
+            }
+
+            $booking = $this->bookingService->rejectBid($id, $merchant->id);
+            return $this->success($booking, 'Bid rejected.', 200);
+        } catch (\Exception $e) {
+            return $this->error($e->getMessage(), 400);
+        }
+    }
+
+    /**
+     * Customer cancels booking - DELETE /bookings/{id}
      */
     public function destroy(int $id): JsonResponse
     {
         try {
-            $this->bookingService->cancelBooking($id, auth()->id());
-            return $this->success(null, 'Booking cancelled successfully.', 200);
+            $booking = $this->bookingService->cancelBooking($id, auth()->id());
+            return $this->success($booking, 'Booking cancelled successfully.', 200);
         } catch (\Exception $e) {
             return $this->error($e->getMessage(), 400);
         }
@@ -163,6 +190,30 @@ class BookingController extends Controller
             $bookings = $this->bookingService->getMerchantBookings($merchant->id, $request->only(['status']));
 
             return $this->success($bookings->items(), 'Merchant bookings retrieved successfully', 200, [
+                'pagination' => [
+                    'total' => $bookings->total(),
+                    'per_page' => $bookings->perPage(),
+                    'current_page' => $bookings->currentPage(),
+                    'last_page' => $bookings->lastPage(),
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return $this->error($e->getMessage(), 400);
+        }
+    }
+
+    /**
+     * Get customer's bookings - GET /customer/bookings
+     */
+    public function customerBookings(Request $request): JsonResponse
+    {
+        try {
+            $bookings = $this->bookingService->getCustomerBookings(
+                auth()->id(),
+                $request->only(['status'])
+            );
+
+            return $this->success($bookings->items(), 'Your bookings retrieved successfully', 200, [
                 'pagination' => [
                     'total' => $bookings->total(),
                     'per_page' => $bookings->perPage(),

@@ -88,7 +88,7 @@ class RecommendationService
                     'distance_km' => round($distance, 2),
                     'score' => $this->calculateRecommendationScore(
                         $distance,
-                        $merchant->avg_rating
+                        $merchant->avg_rating ?? 0
                     ),
                 ];
             })

@@ -42,20 +42,20 @@ class RoleSeeder extends Seeder
         ];
 
         foreach ($permissions as $perm) {
-            Permission::firstOrCreate(['name' => $perm]);
+            Permission::firstOrCreate(['name' => $perm, 'guard_name' => 'sanctum']);
         }
 
         // Roles
-        $customer = Role::firstOrCreate(['name' => 'customer']);
+        $customer = Role::firstOrCreate(['name' => 'customer', 'guard_name' => 'sanctum']);
         $customer->givePermissionTo(['create service request', 'view service requests', 'create worker review']);
 
-        $worker = Role::firstOrCreate(['name' => 'worker']);
+        $worker = Role::firstOrCreate(['name' => 'worker', 'guard_name' => 'sanctum']);
         $worker->givePermissionTo([
             'view service requests', 'update worker profile', 'manage worker skills',
             'manage worker locations', 'manage worker categories'
         ]);
 
-        $admin = Role::firstOrCreate(['name' => 'admin']);
+        $admin = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'sanctum']);
         $admin->givePermissionTo(Permission::all());
     
     }

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Merchant;
+use App\Models\Transaction;
 
 class AdminService
 {

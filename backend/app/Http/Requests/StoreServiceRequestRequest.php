@@ -30,8 +30,8 @@ class StoreServiceRequestRequest extends FormRequest
             'budget_max' => 'required|numeric|gte:budget_min',
             'currency' => 'required|string|in:INR,USD,EUR',
             'urgency' => 'required|integer|in:1,2,3,4,5',
-            'latitude' => 'required|numeric|between:-90,90',
-            'longitude' => 'required|numeric|between:-180,180',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
             'location_text' => 'required|string|max:500',
             'extras' => 'nullable|array',
         ];

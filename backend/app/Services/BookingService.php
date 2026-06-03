@@ -1,43 +1,54 @@
 <?php
 
 namespace App\Services;
+
 use App\Models\Booking;
 use App\Models\ServiceRequest;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\DB;
 
 class BookingService
 {
-    public function createBooking(int $serviceRequestId, int $customerId, int $mechantId, float $agreedRate, array $data = [])
+    /**
+     * Merchant creates a bid on a service request
+     * POST /api/bookings - merchant submits bid
+     */
+    public function createBid(int $serviceRequestId, int $merchantId, float $proposedRate, array $data = []): Booking
     {
+        // Verify service request exists and is open
+        $request = ServiceRequest::findOrFail($serviceRequestId);
 
-        // validing if the service request exists and belongs to customer
-
-        $request = ServiceRequest::findOrFail($serviceRequestId)->where('customer_id', $customerId);
-
-        // validating agreed rate is within the budget range
-
-        if ($agreedRate < $request->budget_min || $agreedRate > $request->budget_max) {
-            throw new \InvalidArgumentException('Agreed rate must be within the budget range');
-        }
-        // checking if booking already exists for the service request
-        if (Booking::where('service_request_id', $serviceRequestId)->exists()) {
-            throw new \InvalidArgumentException('Booking already exists for this service request');
+        if ($request->status !== 'open') {
+            throw new \Exception('Service request is no longer open for bidding');
         }
 
-        // verifying merchant is eligible to accept the service request (e.g. has the required skills, is active, etc.)
-        $merchant = $request->category->merchants()->findOrFail($mechantId);
+        // Validate proposed rate is within budget range
+        if ($proposedRate < $request->budget_min || $proposedRate > $request->budget_max) {
+            throw new \InvalidArgumentException(
+                "Proposed rate must be between {$request->budget_min} and {$request->budget_max}"
+            );
+        }
 
+        // Check if merchant already bid on this request
+        if (Booking::where('service_request_id', $serviceRequestId)
+            ->where('merchant_id', $merchantId)
+            ->whereIn('status', ['bidding', 'accepted'])
+            ->exists()) {
+            throw new \Exception('You already have an active bid on this request');
+        }
+
+        // Create booking as bid
         $booking = Booking::create([
             'service_request_id' => $serviceRequestId,
-            'customer_id' => $customerId,
-            'merchant_id' => $mechantId,
-            'status' => 'pending',
-            'agreed_rate' => $agreedRate,
-            'special_notes' => $data['special_notes'] ?? null,
+            'customer_id' => $request->user_id,
+            'merchant_id' => $merchantId,
+            'status' => 'bidding',
+            'agreed_rate' => $proposedRate,
+            'special_notes' => $data['message'] ?? null,
             'scheduled_at' => $data['scheduled_at'] ?? null,
         ]);
 
-        $request->update(['status' => 'assigned']);
         return $booking->load(['customer', 'merchant', 'serviceRequest']);
     }
 
@@ -50,11 +61,30 @@ class BookingService
     }
 
     /**
-     * Get customer's bookings
+     * Get all bids for a service request (customer selecting from bids)
      */
-    public function getCustomerBookings(int $customerId, array $filters = []): Paginator
+    public function getRequestBids(int $serviceRequestId, array $filters = []): LengthAwarePaginator
     {
-        $query = Booking::where('customer_id', $customerId);
+        $query = Booking::where('service_request_id', $serviceRequestId)
+            ->whereIn('status', ['bidding', 'accepted']);
+
+        if (!empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+
+        return $query->with(['merchant', 'serviceRequest'])
+            ->orderBy('status', 'asc') // bidding first, then accepted
+            ->latest('created_at')
+            ->paginate(15);
+    }
+
+    /**
+     * Get customer's active jobs (accepted/in_progress/completed)
+     */
+    public function getCustomerBookings(int $customerId, array $filters = []): LengthAwarePaginator
+    {
+        $query = Booking::where('customer_id', $customerId)
+            ->whereIn('status', ['accepted', 'in_progress', 'completed']);
 
         if (!empty($filters['status'])) {
             $query->where('status', $filters['status']);
@@ -66,14 +96,17 @@ class BookingService
     }
 
     /**
-     * Get merchant's bookings
+     * Get merchant's bids and jobs
      */
-    public function getMerchantBookings(int $merchantId, array $filters = []): Paginator
+    public function getMerchantBookings(int $merchantId, array $filters = []): LengthAwarePaginator
     {
         $query = Booking::where('merchant_id', $merchantId);
 
         if (!empty($filters['status'])) {
             $query->where('status', $filters['status']);
+        } else {
+            // Default: show active bids and jobs
+            $query->whereIn('status', ['bidding', 'accepted', 'in_progress']);
         }
 
         return $query->with(['customer', 'serviceRequest'])
@@ -82,9 +115,49 @@ class BookingService
     }
 
     /**
-     * Accept booking (worker accepts job at agreed rate)
+     * Customer accepts a bid (selects this merchant)
+     * PUT /api/bookings/{id}/accept - customer selects winner
      */
-    public function acceptBooking(int $bookingId, int $merchantId): Booking
+    public function acceptBid(int $bookingId, int $customerId): Booking
+    {
+        $booking = Booking::findOrFail($bookingId);
+
+        if ($booking->customer_id !== $customerId) {
+            throw new \Exception('Unauthorized.');
+        }
+
+        if ($booking->status !== 'bidding') {
+            throw new \Exception('Can only accept bids with "bidding" status.');
+        }
+
+        DB::beginTransaction();
+        try {
+            // Accept this bid
+            $booking->update(['status' => 'accepted', 'started_at' => now()]);
+
+            // Reject all other bids for this request
+            Booking::where('service_request_id', $booking->service_request_id)
+                ->where('id', '!=', $bookingId)
+                ->where('status', 'bidding')
+                ->update(['status' => 'rejected']);
+
+            // Update service request status
+            $booking->serviceRequest->update(['status' => 'assigned']);
+
+            DB::commit();
+
+            return $booking->load(['customer', 'serviceRequest']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
+    }
+
+    /**
+     * Merchant starts the work after customer accepts
+     * PUT /api/bookings/{id}/start - merchant begins work
+     */
+    public function startWork(int $bookingId, int $merchantId): Booking
     {
         $booking = Booking::findOrFail($bookingId);
 
@@ -92,19 +165,20 @@ class BookingService
             throw new \Exception('Unauthorized.');
         }
 
-        if (!$booking->isPending()) {
-            throw new \Exception('Can only accept pending bookings.');
+        if ($booking->status !== 'accepted') {
+            throw new \Exception('Can only start work on accepted bookings.');
         }
 
-        $booking->update(['status' => 'accepted', 'started_at' => now()]);
+        $booking->update(['status' => 'in_progress']);
 
         return $booking->load(['customer', 'serviceRequest']);
     }
 
     /**
-     * Reject booking (worker declines the job)
+     * Merchant marks work as complete
+     * PUT /api/bookings/{id}/complete - merchant completes work
      */
-    public function rejectBooking(int $bookingId, int $merchantId): Booking
+    public function completeWork(int $bookingId, int $merchantId): Booking
     {
         $booking = Booking::findOrFail($bookingId);
 
@@ -112,29 +186,8 @@ class BookingService
             throw new \Exception('Unauthorized.');
         }
 
-        if (!$booking->isPending()) {
-            throw new \Exception('Can only reject pending bookings.');
-        }
-
-        $booking->update(['status' => 'rejected']);
-        $booking->serviceRequest->update(['status' => 'open']);
-
-        return $booking;
-    }
-
-    /**
-     * Complete booking (job is done, ready for payment)
-     */
-    public function completeBooking(int $bookingId, int $merchantId): Booking
-    {
-        $booking = Booking::findOrFail($bookingId);
-
-        if ($booking->merchant_id !== $merchantId) {
-            throw new \Exception('Unauthorized.');
-        }
-
-        if (!$booking->isAccepted()) {
-            throw new \Exception('Can only complete accepted bookings.');
+        if ($booking->status !== 'in_progress') {
+            throw new \Exception('Can only complete in-progress bookings.');
         }
 
         $booking->update(['status' => 'completed', 'completed_at' => now()]);
@@ -144,7 +197,27 @@ class BookingService
     }
 
     /**
-     * Cancel booking (customer cancels)
+     * Merchant rejects a bid
+     */
+    public function rejectBid(int $bookingId, int $merchantId): Booking
+    {
+        $booking = Booking::findOrFail($bookingId);
+
+        if ($booking->merchant_id !== $merchantId) {
+            throw new \Exception('Unauthorized.');
+        }
+
+        if ($booking->status !== 'bidding') {
+            throw new \Exception('Can only reject bids with "bidding" status.');
+        }
+
+        $booking->update(['status' => 'rejected']);
+
+        return $booking;
+    }
+
+    /**
+     * Customer cancels an accepted booking
      */
     public function cancelBooking(int $bookingId, int $customerId): Booking
     {
@@ -154,13 +227,18 @@ class BookingService
             throw new \Exception('Unauthorized.');
         }
 
-        if ($booking->isCompleted()) {
+        if ($booking->status === 'completed') {
             throw new \Exception('Cannot cancel completed bookings.');
+        }
+
+        if ($booking->status === 'rejected') {
+            throw new \Exception('Booking already rejected.');
         }
 
         $booking->update(['status' => 'cancelled']);
 
-        if (!$booking->isRejected()) {
+        // Reopen the service request if it was assigned
+        if ($booking->serviceRequest->status === 'assigned') {
             $booking->serviceRequest->update(['status' => 'open']);
         }
 

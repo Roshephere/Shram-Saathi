@@ -56,7 +56,7 @@ class MerchantRegistrationService{
                 'registration_status' => 'in_progress',
             ]);
 
-            return $merchant->load('serviceCategory');
+            return $merchant->load('serviceCategories');
         });
 
     }
@@ -83,7 +83,9 @@ class MerchantRegistrationService{
                 'registration_step' => 3,
                 'registration_status' => 'complete',
                 'registration_completed_at' => now(),
+                // 'role' => 'merchant',
             ]);
+            $user->assignRole('merchant');
 
             return $location;
         });

@@ -13,8 +13,6 @@ class AdminController extends Controller
 
     public function __construct(protected AdminService $adminService)
     {
-        $this->middleware('auth:sanctum');
-        $this->middleware('is_admin');
     }
 
     /**

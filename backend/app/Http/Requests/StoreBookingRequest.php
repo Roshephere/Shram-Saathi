@@ -11,7 +11,8 @@ class StoreBookingRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return auth()->check(); // Only authenticated users can create bookings
+        // Only merchants can create bids
+        return auth()->check() && auth()->user()->merchant;
     }
 
     /**
@@ -23,9 +24,8 @@ class StoreBookingRequest extends FormRequest
     {
         return [
             'service_request_id' => 'required|exists:service_requests,id',
-            'merchant_id' => 'required|exists:merchants,id',
-            'agreed_rate' => 'required|numeric|min:0',
-            'special_notes' => 'nullable|string|max:255',
+            'proposed_rate' => 'required|numeric|min:0',
+            'message' => 'nullable|string|max:255',
             'scheduled_at' => 'nullable|date|after:now',
         ];
     }
@@ -33,8 +33,10 @@ class StoreBookingRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'agreed_rate.required' => 'Agreed rate is required',
-            'agreed_rate.numeric' => 'Agreed rate must be a valid amount',
+            'proposed_rate.required' => 'Proposed rate is required',
+            'proposed_rate.numeric' => 'Proposed rate must be a valid amount',
+            'service_request_id.required' => 'Service request is required',
+            'service_request_id.exists' => 'Service request not found',
         ];
     }
 }

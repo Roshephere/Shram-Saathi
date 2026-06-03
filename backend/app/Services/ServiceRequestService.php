@@ -2,8 +2,7 @@
 
 namespace App\Services;
 use App\Models\ServiceRequest;
-use Illuminate\Pagination\Paginator;
-
+use Illuminate\Pagination\LengthAwarePaginator;
 class ServiceRequestService
 {
 
@@ -15,7 +14,7 @@ class ServiceRequestService
         return ServiceRequest::create($data);
     }
 
-    public function getAllRequests(array $filters = []): Paginator
+    public function getAllRequests(array $filters = []): LengthAwarePaginator
     {
         $query = ServiceRequest::query();
 
@@ -70,7 +69,7 @@ class ServiceRequestService
         return ServiceRequest::with(['user', 'category', 'userLocation'])->findOrFail($requestId);
     }
 
-    public function getUserRequests(int $userId, array $filters = []): Paginator
+    public function getUserRequests(int $userId, array $filters = []): LengthAwarePaginator
     {
         $query = ServiceRequest::where('user_id', $userId);
 

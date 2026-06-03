@@ -5,10 +5,12 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreServiceRequestRequest;
 use App\Http\Requests\UpdateServiceRequestRequest;
 use App\Models\ServiceRequests;
+use App\Models\UserLocation;
 use App\Services\ServiceRequestService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class ServiceRequestsController extends Controller
 {
@@ -20,7 +22,6 @@ class ServiceRequestsController extends Controller
     public function __construct(ServiceRequestService $serviceRequestService)
     {
         $this->serviceRequestService = $serviceRequestService;
-        $this->middleware('auth:sanctum');
     }
 
     /**
@@ -39,6 +40,12 @@ class ServiceRequestsController extends Controller
                 'longitude',
                 'distance_km',
             ]);
+
+            // Regular users see only their own requests
+            // Admins see all requests
+            if (!auth()->user()->hasRole('admin')) {
+                $filters['user_id'] = auth()->id();
+            }
 
             $requests = $this->serviceRequestService->getAllRequests($filters);
 
@@ -68,10 +75,17 @@ class ServiceRequestsController extends Controller
     {
         try {
             $userId = auth()->id();
+            $validated = $request->validated();
+            // If custom lat/long provided, use those. Otherwise fetch from user_location_id
+            if (empty($validated['latitude']) || empty($validated['longitude'])) {
+                $location = UserLocation::findOrFail($validated['user_location_id']);
+                $validated['latitude'] = $location->latitude;
+                $validated['longitude'] = $location->longitude;
+            }
 
             $serviceRequest = $this->serviceRequestService->createRequest(
                 $userId,
-                $request->validated()
+                $validated
             );
 
             return $this->success(
@@ -80,6 +94,7 @@ class ServiceRequestsController extends Controller
                 201
             );
         } catch (\Exception $e) {
+            Log::error('Failed to create service request', ['error' => $e->getMessage()]);
             return $this->error('Failed to create service request', 500, ['error' => $e->getMessage()]);
         }
     }
@@ -184,6 +199,48 @@ class ServiceRequestsController extends Controller
             );
         } catch (\Exception $e) {
             return $this->error('Failed to retrieve user requests', 500, ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Get open service requests available for merchants to bid on
+     */
+    public function availableRequests(Request $request): JsonResponse
+    {
+        try {
+            $merchantId = auth()->id();
+            
+            $filters = $request->only([
+                'category_id',
+                'urgency',
+                'budget_min',
+                'budget_max',
+                'distance_km',
+            ]);
+            
+            // Add status filter for open requests only
+            $filters['status'] = 'open';
+            
+            // Exclude merchant's own requests
+            $filters['exclude_user_id'] = $merchantId;
+            
+            $requests = $this->serviceRequestService->getAllRequests($filters);
+
+            return $this->success(
+                $requests->items(),
+                'Available service requests retrieved successfully',
+                200,
+                [
+                    'pagination' => [
+                        'total' => $requests->total(),
+                        'per_page' => $requests->perPage(),
+                        'current_page' => $requests->currentPage(),
+                        'last_page' => $requests->lastPage(),
+                    ]
+                ]
+            );
+        } catch (\Exception $e) {
+            return $this->error('Failed to retrieve available requests', 500, ['error' => $e->getMessage()]);
         }
     }
 }

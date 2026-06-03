@@ -12,12 +12,14 @@ use App\Http\Controllers\MerchantCategoryController;
 use App\Http\Controllers\MerchantController;
 use App\Http\Controllers\MerchantRegistrationController;
 use App\Http\Controllers\MerchantServiceCategoryController;
+use App\Http\Controllers\RoleController;
 use App\Http\Controllers\ServiceRequestsController;
 use App\Http\Controllers\SkillController;
 use App\Http\Controllers\ServiceCategoryController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserLocationController;
 use App\Http\Controllers\RecommendationModelController;
+use App\Http\Controllers\MerchantLocationsController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -51,6 +53,29 @@ Route::get('give-role', function () {
 });
 
 Route::middleware(['auth:sanctum'])->group(function () {
+    // Booking routes - RESTRUCTURED for marketplace model
+    Route::middleware('auth:sanctum')->group(function () {
+        // Merchant creates bid, Customer views bids
+        Route::post('bookings', [BookingController::class, 'store']);
+        Route::get('bookings', [BookingController::class, 'index']); // ?service_request_id={id}
+        Route::get('bookings/{id}', [BookingController::class, 'show']);
+
+        // Customer actions on bids
+        Route::put('bookings/{id}/accept', [BookingController::class, 'accept']);
+        Route::delete('bookings/{id}', [BookingController::class, 'destroy']);
+
+        // Merchant actions on work
+        Route::put('bookings/{id}/start', [BookingController::class, 'start']);
+        Route::put('bookings/{id}/complete', [BookingController::class, 'complete']);
+        Route::put('bookings/{id}/reject', [BookingController::class, 'reject']);
+
+        // Get customer's bookings
+        Route::get('customer/bookings', [BookingController::class, 'customerBookings']);
+        
+        // Get merchant's bookings
+        Route::get('merchant/bookings', [BookingController::class, 'merchantBookings']);
+    });
+
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/updatePassword', [AuthController::class, 'updatePassword']);
@@ -62,7 +87,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/worker/register/step2/{userId}', [MerchantRegistrationController::class, 'step2']);
     Route::post('/worker/register/step3/{merchantId}', [MerchantRegistrationController::class, 'step3']);
 
-    Route::get('/users',[UserController::class, 'index']);
+    Route::get('/users', [UserController::class, 'index']);
+    Route::get('/users/{id}', [UserController::class, 'show']);
+    Route::delete('/users/{id}', [UserController::class, 'destroy']);
 
     // Service categories create
     Route::get('/service-categories', [ServiceCategoryController::class, 'index']);
@@ -77,8 +104,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::put('/user/locations/{locationId}', [UserLocationController::class, 'update']);
     Route::delete('/user/locations/{locationId}', [UserLocationController::class, 'destroy']);
 
-    Route::apiResource('service-requests', ServiceRequestsController::class);
+    Route::apiResource('merchant-locations', MerchantLocationsController::class);
+
+    Route::apiResource('service-requests', ServiceRequestsController::class)->whereNumber('service_request');
     Route::get('service-requests/user/list', [ServiceRequestsController::class, 'userRequests']);
+    Route::get('service-requests/available', [ServiceRequestsController::class, 'availableRequests']);
 
 
 });
@@ -127,20 +157,27 @@ Route::get('theme-set', function () {
     return response()->json(['theme'])->cookie('theme', 'red', 60);
 });
 
-// Booking routes
-Route::apiResource('bookings', BookingController::class)->except(['edit', 'create']);
-Route::put('bookings/{id}/accept', [BookingController::class, 'accept']);
-Route::put('bookings/{id}/reject', [BookingController::class, 'reject']);
-Route::put('bookings/{id}/complete', [BookingController::class, 'complete']);
-Route::get('merchant/bookings', [BookingController::class, 'merchantBookings']);
 
 // Admin routes
-Route::middleware('is_admin')->prefix('admin')->group(function () {
+Route::middleware(['auth:sanctum', 'is_admin'])->prefix('admin')->group(function () {
     Route::get('merchants/pending', [AdminController::class, 'getPendingMerchants']);
     Route::put('merchants/{merchantId}/verify', [AdminController::class, 'verifyMerchant']);
     Route::put('merchants/{merchantId}/reject', [AdminController::class, 'rejectMerchant']);
     Route::put('merchants/{merchantId}/suspend', [AdminController::class, 'suspendMerchant']);
-    
+
     Route::get('transactions', [AdminController::class, 'getTransactions']);
     Route::get('dashboard', [AdminController::class, 'getDashboard']);
+
+    Route::apiResource('roles', RoleController::class);
+    Route::post('roles/seed-defaults', [RoleController::class, 'seedDefaults']);
 });
+
+// User role management (authenticated users, admin-only actions checked in controller)
+Route::middleware(['auth:sanctum', 'is_admin'])->group(function () {
+    Route::put('users/{userId}/roles', [RoleController::class, 'syncUserRoles']);
+    Route::post('users/{userId}/roles', [RoleController::class, 'assignRoleToUser']);
+    Route::delete('users/{userId}/roles/{roleName}', [RoleController::class, 'removeRoleFromUser']);
+});
+
+// Get own roles (any authenticated user can see their own)
+Route::middleware('auth:sanctum')->get('users/{userId}/roles', [RoleController::class, 'getUserRoles']);

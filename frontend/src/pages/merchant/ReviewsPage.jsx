@@ -25,9 +25,7 @@ export default function ReviewsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  useEffect(() => { loadData(); }, []);
 
   const loadData = async () => {
     setLoading(true);
@@ -39,8 +37,9 @@ export default function ReviewsPage() {
       setMerchant(myMerchant || null);
 
       if (myMerchant) {
-        const data = await reviewService.getByMerchant(myMerchant.id);
-        setReviews(Array.isArray(data) ? data : []);
+        const result = await reviewService.getByMerchant(myMerchant.id);
+        const items = result?.data ?? result;
+        setReviews(Array.isArray(items) ? items : []);
       }
     } catch {
       setError('Failed to load reviews');
@@ -55,10 +54,7 @@ export default function ReviewsPage() {
   const reviewCount = reviews.length;
 
   const ratingDistribution = [5, 4, 3, 2, 1].map((star) => {
-    const count = reviews.filter((r) => {
-      const rVal = r.rating_overall || r.rating || 0;
-      return Math.round(rVal) === star;
-    }).length;
+    const count = reviews.filter((r) => Math.round(r.rating_overall || r.rating || 0) === star).length;
     return { star, count, pct: reviewCount > 0 ? (count / reviewCount) * 100 : 0 };
   });
 
@@ -70,7 +66,7 @@ export default function ReviewsPage() {
         <div className="text-center">
           <p className="text-4xl font-bold text-gray-900">{avgRating > 0 ? avgRating.toFixed(1) : 'N/A'}</p>
           {avgRating > 0 && <StarRating rating={Math.round(avgRating)} />}
-          <p className="text-sm text-gray-500 mt-1">{merchant?.status ? <StatusBadge status={merchant.status} /> : ''}</p>
+          <p className="text-sm text-gray-500 mt-1">{reviewCount} reviews</p>
         </div>
         <div className="flex-1 space-y-1.5">
           {ratingDistribution.map(({ star, count, pct }) => (
@@ -93,14 +89,19 @@ export default function ReviewsPage() {
           {reviews.map((review) => (
             <div key={review.id} className="bg-white rounded-xl border p-5">
               <div className="flex items-start justify-between">
-                <div>
+                <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-gray-900">{review.customer_name || review.customer?.name || 'Customer'}</span>
-                    <StarRating rating={Math.round(review.rating_overall || review.rating || 0)} />
+                    <span className="font-semibold text-gray-900">{review.user?.name || 'Customer'}</span>
+                    <StarRating rating={Math.round(review.rating_overall || 0)} />
                   </div>
-                  <p className="mt-2 text-sm text-gray-600">{review.review_text || review.comment || ''}</p>
+                  <div className="flex gap-4 mt-1 text-xs text-gray-500">
+                    {review.rating_skill && <span>Skill: {review.rating_skill}</span>}
+                    {review.rating_timeliness && <span>Timeliness: {review.rating_timeliness}</span>}
+                    {review.rating_communication && <span>Communication: {review.rating_communication}</span>}
+                  </div>
+                  {review.review_text && <p className="mt-2 text-sm text-gray-600">{review.review_text}</p>}
                 </div>
-                <span className="text-xs text-gray-400 whitespace-nowrap">
+                <span className="text-xs text-gray-400 whitespace-nowrap ml-4">
                   {review.created_at ? new Date(review.created_at).toLocaleDateString() : ''}
                 </span>
               </div>

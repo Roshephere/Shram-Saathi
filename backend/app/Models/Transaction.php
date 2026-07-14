@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Transaction extends Model
 {
@@ -28,12 +27,12 @@ class Transaction extends Model
         'completed_at' => 'datetime',
     ];
 
-    public function booking(): BelongsTo
+    public function booking()
     {
         return $this->belongsTo(Booking::class);
     }
 
-    public function merchant(): BelongsTo
+    public function merchant()
     {
         return $this->belongsTo(Merchant::class);
     }

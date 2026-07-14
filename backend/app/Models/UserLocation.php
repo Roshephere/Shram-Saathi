@@ -13,6 +13,7 @@ class UserLocation extends Model
         'address',
         'latitude',
         'longitude',
+        'geohash',
         'is_primary',
         'is_active',
         'extras',

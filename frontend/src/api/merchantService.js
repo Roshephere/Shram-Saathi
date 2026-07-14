@@ -3,27 +3,27 @@ import apiClient, { extractData } from './client';
 export const merchantService = {
   async getAll() {
     const response = await apiClient.get('/merchants');
-    return response.data;
+    return extractData(response);
   },
 
   async getById(id) {
     const response = await apiClient.get(`/merchants/${id}`);
-    return response.data;
+    return extractData(response);
   },
 
   async create(data) {
     const response = await apiClient.post('/merchants', data);
-    return response.data;
+    return extractData(response);
   },
 
   async update(id, data) {
     const response = await apiClient.put(`/merchants/${id}`, data);
-    return response.data;
+    return extractData(response);
   },
 
   async delete(id) {
     const response = await apiClient.delete(`/merchants/${id}`);
-    return response.data;
+    return extractData(response);
   },
 
   async getServiceCategories(merchantId) {

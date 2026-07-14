@@ -3,7 +3,7 @@ import { adminService } from '../../api/adminService';
 import { merchantService } from '../../api/merchantService';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import ErrorMessage from '../../components/ui/ErrorMessage';
-import { Users, UserCheck, Briefcase, FileText, Star, ShoppingBag, DollarSign } from 'lucide-react';
+import { Users, UserCheck, Briefcase, FileText, Star, ShoppingBag, DollarSign, Clock } from 'lucide-react';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
@@ -27,8 +27,10 @@ export default function AdminDashboard() {
           pending_merchants: list.filter((m) => m.status === 'pending').length,
           active_merchants: list.filter((m) => m.status === 'active').length,
           total_bookings: 0,
+          completed_bookings: 0,
           total_revenue: 0,
-          total_commission: 0,
+          platform_commission: 0,
+          pending_transactions: 0,
         });
       } catch {
         setError('Failed to load dashboard stats');
@@ -42,11 +44,13 @@ export default function AdminDashboard() {
 
   const items = [
     { label: 'Total Merchants', value: stats?.total_merchants ?? 'N/A', icon: UserCheck, color: 'text-blue-600', bg: 'bg-blue-50' },
-    { label: 'Pending Verifications', value: stats?.pending_merchants ?? 'N/A', icon: Users, color: 'text-yellow-600', bg: 'bg-yellow-50' },
+    { label: 'Pending Verifications', value: stats?.pending_verifications ?? stats?.pending_merchants ?? 'N/A', icon: Users, color: 'text-yellow-600', bg: 'bg-yellow-50' },
     { label: 'Active Merchants', value: stats?.active_merchants ?? 'N/A', icon: Briefcase, color: 'text-green-600', bg: 'bg-green-50' },
     { label: 'Total Bookings', value: stats?.total_bookings ?? 'N/A', icon: ShoppingBag, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+    { label: 'Completed Bookings', value: stats?.completed_bookings ?? 'N/A', icon: FileText, color: 'text-blue-600', bg: 'bg-blue-50' },
     { label: 'Total Revenue', value: stats?.total_revenue ? `NPR ${Number(stats.total_revenue).toLocaleString()}` : 'N/A', icon: DollarSign, color: 'text-green-600', bg: 'bg-green-50' },
-    { label: 'Commission', value: stats?.total_commission ? `NPR ${Number(stats.total_commission).toLocaleString()}` : 'N/A', icon: Star, color: 'text-purple-600', bg: 'bg-purple-50' },
+    { label: 'Platform Commission', value: stats?.platform_commission ? `NPR ${Number(stats.platform_commission).toLocaleString()}` : 'N/A', icon: Star, color: 'text-purple-600', bg: 'bg-purple-50' },
+    { label: 'Pending Transactions', value: stats?.pending_transactions ?? 'N/A', icon: Clock, color: 'text-yellow-600', bg: 'bg-yellow-50' },
   ];
 
   return (

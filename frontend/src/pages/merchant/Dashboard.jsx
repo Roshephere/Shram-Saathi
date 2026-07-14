@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { merchantService } from '../../api/merchantService';
+import { bookingService } from '../../api/bookingService';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import ErrorMessage from '../../components/ui/ErrorMessage';
 import StatusBadge from '../../components/ui/StatusBadge';
@@ -10,6 +11,7 @@ export default function MerchantDashboard() {
   const { user } = useAuth();
   const [merchant, setMerchant] = useState(null);
   const [services, setServices] = useState([]);
+  const [jobsCount, setJobsCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -27,12 +29,15 @@ export default function MerchantDashboard() {
       setMerchant(myMerchant || null);
 
       if (myMerchant) {
-        try {
-          const svc = await merchantService.getServiceCategories(myMerchant.id);
-          setServices(Array.isArray(svc) ? svc : []);
-        } catch {
-          setServices([]);
-        }
+        const [svc, activeBookings, completedBookings] = await Promise.allSettled([
+          merchantService.getServiceCategories(myMerchant.id),
+          bookingService.merchantBookings({ status: 'accepted' }),
+          bookingService.merchantBookings({ status: 'completed' }),
+        ]);
+        if (svc.status === 'fulfilled') setServices(Array.isArray(svc.value) ? svc.value : []);
+        const active = activeBookings.status === 'fulfilled' && Array.isArray(activeBookings.value) ? activeBookings.value.length : 0;
+        const completed = completedBookings.status === 'fulfilled' && Array.isArray(completedBookings.value) ? completedBookings.value.length : 0;
+        setJobsCount(active + completed);
       }
     } catch (err) {
       setError('Failed to load merchant data');
@@ -96,7 +101,7 @@ export default function MerchantDashboard() {
         {[
           { label: 'Services Offered', value: services.length, icon: Briefcase, color: 'text-indigo-600', bg: 'bg-indigo-50' },
           { label: 'Average Rating', value: merchant.avg_rating ? Number(merchant.avg_rating).toFixed(1) : 'N/A', icon: Star, color: 'text-yellow-600', bg: 'bg-yellow-50' },
-          { label: 'Jobs', value: '0', icon: ShoppingBag, color: 'text-green-600', bg: 'bg-green-50' },
+          { label: 'Jobs', value: jobsCount, icon: ShoppingBag, color: 'text-green-600', bg: 'bg-green-50' },
         ].map((stat) => (
           <div key={stat.label} className="bg-white rounded-lg border p-5">
             <div className="flex items-center justify-between">

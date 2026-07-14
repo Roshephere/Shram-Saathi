@@ -3,6 +3,7 @@ namespace App\Services;
 
 use App\Models\User;
 use App\Models\UserLocation;
+use App\Utils\GeoHash;
 use Illuminate\Support\Facades\DB;
 
 class UserLocationService
@@ -19,6 +20,16 @@ class UserLocationService
                     ->update(['is_primary' => false]);
             }
 
+             // Compute geohash from lat/lon
+        $geohash = null;
+        if (!empty($data['latitude']) && !empty($data['longitude'])) {
+            $geohash = GeoHash::encode(
+                (float) $data['latitude'],
+                (float) $data['longitude'],
+                8
+            );
+        }
+
             return UserLocation::create([
                 'user_id' => $userId,
                 'label' => $data['label'] ?? 'Home',
@@ -29,6 +40,7 @@ class UserLocationService
                 'is_primary' => $data['is_primary'] ?? false,
                 'is_active' => $data['is_active'] ?? true,
                 'extras' => $data['extras'] ?? null,
+                'geohash' => $geohash,
             ]);
         });
     }
@@ -45,6 +57,17 @@ class UserLocationService
                 UserLocation::where('user_id', $location->user_id)
                     ->update(['is_primary' => false]);
             }
+
+            // Compute geohash from lat/lon
+            $geohash = null;
+            if (!empty($data['latitude']) && !empty($data['longitude'])) {
+                $geohash = GeoHash::encode(
+                    (float) $data['latitude'],
+                    (float) $data['longitude'],
+                    8
+                );
+            }
+            $data['geohash'] = $geohash;
 
             $location->update($data);
             return $location->fresh();

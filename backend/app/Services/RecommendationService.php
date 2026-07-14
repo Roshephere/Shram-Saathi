@@ -3,6 +3,7 @@ namespace App\Services;
 
 use App\Models\ServiceRequest;
 use App\Models\Merchant;
+use App\Utils\GeoHash;
 use Illuminate\Support\Facades\DB;
 
 class RecommendationService
@@ -45,6 +46,18 @@ class RecommendationService
         $userLon = $serviceRequest->userLocation->longitude;
         $categoryId = $serviceRequest->category_id;
 
+
+         // ─── GEOHASH PRE-FILTER ───────────────────────────────
+        // Compute a geohash prefix based on search radius.
+        // For 50km → precision 4 (~39km cells), for 10km → precision 5 (~5km cells)
+        // This cuts the dataset from thousands to hundreds BEFORE processes it.
+        $prefixLength = GeoHash::precisionForRadius($maxDistance, $userLat);
+        $userGeohashPrefix = substr(
+            GeoHash::encode($userLat, $userLon, 8),
+            0,
+            $prefixLength
+        );
+
         // Get all workers offering this service
         $workers = Merchant::query()
             ->with(['user', 'serviceCategories', 'locations'])
@@ -52,6 +65,11 @@ class RecommendationService
                 $query->where('service_category_id', $categoryId);
             })
             ->where('status', 'active') // Only approved workers
+            // Geo hash: filter.
+            ->whereHas('locations', function ($query) use ($userGeohashPrefix) {
+                $query->where('is_primary', true)
+                      ->where('geohash', 'like', $userGeohashPrefix . '%');
+            })
             ->get()
             ->map(function ($merchant) use ($userLat, $userLon, $maxDistance) {
                 // Get worker's primary location
@@ -119,9 +137,9 @@ class RecommendationService
     /**
      * Get workers by category only (no distance filter)
      */
-    public function getWorkersByCategory(int $categoryId, int $limit = 10)
+    public function getWorkersByCategory(int $categoryId, int $limit = 10,  ?float $userLat = null, ?float $userLon = null)
     {
-        return Merchant::with(['user', 'serviceCategories'])
+        $merchants = Merchant::with(['user', 'serviceCategories', 'locations'])
             ->whereHas('serviceCategories', function ($query) use ($categoryId) {
                 $query->where('service_category_id', $categoryId);
             })
@@ -129,5 +147,22 @@ class RecommendationService
             ->orderByDesc('avg_rating')
             ->take($limit)
             ->get();
+
+             return $merchants->map(function ($merchant) use ($userLat, $userLon) {
+        $primaryLocation = $merchant->locations->firstWhere('is_primary', true) ?? $merchant->locations->first();
+
+        $data = $merchant->toArray();
+        $data['location'] = $primaryLocation?->toArray();
+
+        if ($primaryLocation && $userLat && $userLon) {
+            $data['distance_km'] = round($this->calculateDistance(
+                $userLat, $userLon,
+                (float) $primaryLocation->latitude,
+                (float) $primaryLocation->longitude
+            ), 2);
+        }
+
+        return $data;
+    });
     }
 }

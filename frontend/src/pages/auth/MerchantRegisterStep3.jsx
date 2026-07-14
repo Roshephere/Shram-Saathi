@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { Wrench, MapPin, Crosshair } from 'lucide-react';
+import { Wrench, MapPin } from 'lucide-react';
+import LocationPicker from '../../components/ui/LocationPicker';
 import apiClient from '../../api/client';
 import toast from 'react-hot-toast';
 
@@ -19,35 +20,15 @@ export default function MerchantRegisterStep3() {
     is_active: true,
   });
   const [loading, setLoading] = useState(false);
-  const [gettingLocation, setGettingLocation] = useState(false);
 
-  const getCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      toast.error('Geolocation not supported');
-      return;
-    }
-    setGettingLocation(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setForm({
-          ...form,
-          latitude: pos.coords.latitude.toString(),
-          longitude: pos.coords.longitude.toString(),
-          address: `${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`,
-        });
-        setGettingLocation(false);
-        toast.success('Location detected!');
-      },
-      () => {
-        setGettingLocation(false);
-        toast.error('Could not get location. Enter manually.');
-      }
-    );
+  const handleLocationChange = ({ latitude, longitude, address }) => {
+    setForm((prev) => ({
+      ...prev,
+      latitude: latitude != null ? String(latitude) : '',
+      longitude: longitude != null ? String(longitude) : '',
+      address: address || prev.address,
+    }));
   };
-
-  useEffect(() => {
-    getCurrentLocation();
-  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -101,41 +82,31 @@ export default function MerchantRegisterStep3() {
             <p className="text-sm text-gray-600">Set your service location</p>
           </div>
 
-          <button type="button" onClick={getCurrentLocation} disabled={gettingLocation}
-            className="w-full flex items-center justify-center gap-2 py-2.5 border-2 border-dashed border-green-300 text-green-700 font-medium rounded-lg hover:bg-green-50 disabled:opacity-50 transition-colors">
-            <Crosshair className={`h-5 w-5 ${gettingLocation ? 'animate-spin' : ''}`} />
-            {gettingLocation ? 'Detecting...' : 'Detect My Location'}
-          </button>
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Location Label *</label>
             <input type="text" required value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })}
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none" placeholder="Primary Location" />
           </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Country *</label>
             <input type="text" required value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })}
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none" placeholder="Nepal" />
           </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Address / Location Text *</label>
             <input type="text" required value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })}
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none" placeholder="Kathmandu, Nepal" />
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Latitude *</label>
-              <input type="number" step="any" required value={form.latitude}
-                onChange={(e) => setForm({ ...form, latitude: e.target.value })}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none" placeholder="27.7172" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Longitude *</label>
-              <input type="number" step="any" required value={form.longitude}
-                onChange={(e) => setForm({ ...form, longitude: e.target.value })}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none" placeholder="85.3240" />
-            </div>
-          </div>
+
+          <LocationPicker
+            label="Select Location on Map"
+            required
+            value={form.latitude && form.longitude ? { lat: form.latitude, lng: form.longitude } : null}
+            onChange={handleLocationChange}
+            height="280px"
+          />
 
           <label className="flex items-center gap-2 text-sm text-gray-600">
             <input type="checkbox" checked={form.is_primary} onChange={(e) => setForm({ ...form, is_primary: e.target.checked })} className="rounded" />

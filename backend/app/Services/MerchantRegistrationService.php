@@ -67,7 +67,7 @@ class MerchantRegistrationService{
         return DB::transaction(function () use ($merchantId, $data){
             $merchant = Merchant::findOrFail($merchantId);
             $user = $merchant->user;
-            $location =MerchantLocation::create([
+            $location =MerchantLocationreate([
                 'merchant_id'=> $merchantId,
                 'label'=> $data['label'] ?? null,
                 'country'=> $data['country'] ?? null,
@@ -85,7 +85,7 @@ class MerchantRegistrationService{
                 'registration_completed_at' => now(),
                 // 'role' => 'merchant',
             ]);
-            $user->assignRole('merchant');
+            $user->assignRole('worker');
 
             return $location;
         });

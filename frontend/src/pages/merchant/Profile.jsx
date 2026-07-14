@@ -6,7 +6,8 @@ import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import ErrorMessage from '../../components/ui/ErrorMessage';
 import Modal from '../../components/ui/Modal';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
-import { MapPin, Plus, Edit2, Trash2, Navigation } from 'lucide-react';
+import LocationPicker from '../../components/ui/LocationPicker';
+import { MapPin, Plus, Edit2, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function MerchantProfile() {
@@ -102,20 +103,13 @@ export default function MerchantProfile() {
     setLocationModal(true);
   };
 
-  const getCurrentLocation = () => {
-    if (!navigator.geolocation) { toast.error('Geolocation not supported'); return; }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLocForm((prev) => ({
-          ...prev,
-          latitude: String(pos.coords.latitude),
-          longitude: String(pos.coords.longitude),
-          address: prev.address || `${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`,
-        }));
-        toast.success('Location detected');
-      },
-      () => toast.error('Could not get current location'),
-    );
+  const handleLocationChange = ({ latitude, longitude, address }) => {
+    setLocForm((prev) => ({
+      ...prev,
+      latitude: latitude != null ? String(latitude) : '',
+      longitude: longitude != null ? String(longitude) : '',
+      address: address || prev.address,
+    }));
   };
 
   const handleLocSubmit = async (e) => {
@@ -284,24 +278,13 @@ export default function MerchantProfile() {
             <input type="text" required value={locForm.country} onChange={(e) => setLocForm({ ...locForm, country: e.target.value })}
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" />
           </div>
-          <button type="button" onClick={getCurrentLocation}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700">
-            <Navigation className="h-4 w-4" /> Get Current Location
-          </button>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Latitude *</label>
-              <input type="number" step="any" required value={locForm.latitude}
-                onChange={(e) => setLocForm({ ...locForm, latitude: e.target.value })}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Longitude *</label>
-              <input type="number" step="any" required value={locForm.longitude}
-                onChange={(e) => setLocForm({ ...locForm, longitude: e.target.value })}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" />
-            </div>
-          </div>
+          <LocationPicker
+            label="Select Location on Map"
+            required
+            value={locForm.latitude && locForm.longitude ? { lat: locForm.latitude, lng: locForm.longitude } : null}
+            onChange={handleLocationChange}
+            height="220px"
+          />
           <label className="flex items-center gap-2 text-sm cursor-pointer">
             <input type="checkbox" checked={locForm.is_primary} onChange={(e) => setLocForm({ ...locForm, is_primary: e.target.checked })} />
             Set as primary location

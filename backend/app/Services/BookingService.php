@@ -193,6 +193,16 @@ class BookingService
         $booking->update(['status' => 'completed', 'completed_at' => now()]);
         $booking->serviceRequest->update(['status' => 'completed']);
 
+        // Create transaction for platform commission tracking
+        if ($booking->agreed_rate > 0) {
+            $adminService = new \App\Services\AdminService();
+            $adminService->createTransaction(
+                $booking->id,
+                $booking->merchant_id,
+                (float) $booking->agreed_rate
+            );
+        }
+
         return $booking->load(['customer', 'serviceRequest']);
     }
 

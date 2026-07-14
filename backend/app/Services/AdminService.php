@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Merchant;
 use App\Models\Transaction;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class AdminService
 {
@@ -42,6 +43,25 @@ class AdminService
         ]);
 
         return $merchant;
+    }
+
+    /**
+     * bookings - GET /admin/bookings
+     */
+
+    public function getAllBookings(array $filters = [])
+    {
+        $query = \App\Models\Booking::query()->with(['customer', 'merchant', 'serviceRequest']);
+
+        if (!empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+
+        if (!empty($filters['merchant_id'])) {
+            $query->where('merchant_id', $filters['merchant_id']);
+        }
+
+        return $query->latest()->paginate(20);
     }
 
     /**
@@ -97,10 +117,10 @@ class AdminService
     /**
      * Get all transactions
      */
-    public function getAllTransactions(array $filters = []): Paginator
+    public function getAllTransactions(array $filters = []): LengthAwarePaginator
     {
-        $query = Transaction::query();
-
+        $query = Transaction::query()->with(['booking.customer', 'merchant']);
+    // dd($query);
         if (!empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }
@@ -109,7 +129,7 @@ class AdminService
             $query->where('merchant_id', $filters['merchant_id']);
         }
 
-        return $query->with(['booking', 'merchant'])
+        return $query
             ->latest('created_at')
             ->paginate(20);
     }
@@ -131,4 +151,43 @@ class AdminService
         ];
     }
 
+    /**
+     * Get all reviews
+     */
+    public function getAllReviews(array $filters = [])
+    {
+        $query = \App\Models\MerchantReview::query();
+
+        if (!empty($filters['merchant_id'])) {
+            $query->where('merchant_id', $filters['merchant_id']);
+        }
+
+        if (!empty($filters['user_id'])) {
+            $query->where('user_id', $filters['user_id']);
+        }
+
+        return $query->with(['user', 'merchant', 'booking'])
+            ->latest('created_at')
+            ->paginate(20);
+    }
+
+    public function resubmitMerchant(int $merchantId)
+    {
+        try{
+            $merchant = Merchant::findOrFail($merchantId);
+
+            if ($merchant->status !== 'suspended') {
+                return response()->json(['error' => 'Only suspended merchants can be resubmitted.'], 400);
+            }
+
+            $merchant->update([
+                'status' => 'pending',
+                'extras' => array_merge($merchant->extras ?? [], ['resubmitted_at' => now()]),
+            ]);
+
+            return $merchant;
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 400);
+        }
+    }
 }

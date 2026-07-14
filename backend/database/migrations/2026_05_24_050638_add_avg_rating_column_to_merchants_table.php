@@ -24,8 +24,8 @@ return new class extends Migration {
     public function down(): void
     {
         Schema::table('merchants', function (Blueprint $table) {
-            $table->dropColumn('avg_rating');
             $table->dropForeign(['verified_by']);
+            $table->dropColumn('avg_rating');
             $table->dropColumn('verified_by');
         });
     }

@@ -1,4 +1,4 @@
-import apiClient, { extractData } from './client';
+import apiClient, { extractData, extractPaginated } from './client';
 
 export const bookingService = {
   /** GET /bookings?service_request_id={id} - view bids for a request */
@@ -7,10 +7,10 @@ export const bookingService = {
     return extractData(response);
   },
 
-  /** GET /customer/bookings - customer's active jobs */
+  /** GET /customer/bookings - customer's bookings (paginated) */
   async getCustomerBookings(params) {
     const response = await apiClient.get('/customer/bookings', { params });
-    return extractData(response);
+    return extractPaginated(response);
   },
 
   /** GET /bookings/{id} - single booking detail */
@@ -55,9 +55,9 @@ export const bookingService = {
     return extractData(response);
   },
 
-  /** GET /merchant/bookings - merchant's own bids and jobs */
+  /** GET /merchant/bookings - merchant's own bids and jobs (paginated) */
   async merchantBookings(params) {
     const response = await apiClient.get('/merchant/bookings', { params });
-    return extractData(response);
+    return extractPaginated(response);
   },
 };

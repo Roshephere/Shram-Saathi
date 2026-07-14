@@ -18,6 +18,13 @@ class MerchantLocationService{
 
     public function createMerchantLocation(array $data){
         
+    if(!empty($data['latitude']) && !empty($data['longitude'])) {
+        $data['geohash'] = \App\Utils\Geohash::encode(
+            (float) $data['latitude'],
+            (float) $data['longitude'],
+            8
+        );
+    }
         return MerchantLocation::create($data)   ; 
     }
 
@@ -30,6 +37,15 @@ class MerchantLocationService{
     
     public function updateMerchantLocation(int $id, array $data){
         $location = $this->getById($id);
+
+        // Recompute geohash if latitude and longitude are provided
+        if(!empty($data['latitude']) && !empty($data['longitude'])) {
+            $data['geohash'] = \App\Utils\Geohash::encode(
+                (float) $data['latitude'],
+                (float) $data['longitude'],
+                8
+            );
+        }
         $location = $location->update($data);
         return $location;
     }

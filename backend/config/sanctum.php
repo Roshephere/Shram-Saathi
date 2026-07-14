@@ -47,9 +47,15 @@ return [
     |
     */
 
-    'expiration' => env('ACCESS_TOKEN_EXPIRATION_TIME',15),
-    'rt_expiration' => env('REFRESH_TOKEN_EXPIRATION_TABLE',24 * 60),
+    // 'expiration' => env('ACCESS_TOKEN_EXPIRATION_TIME',120),
+    // 'rt_expiration' => env('REFRESH_TOKEN_EXPIRATION_TABLE',24 * 60),
 
+    'expiration' => null,
+    'access_token_expiration' =>
+    (int) env('ACCESS_TOKEN_EXPIRATION_TIME', 120),
+
+'remember_token_expiration' =>
+    (int) env('REMEMBER_TOKEN_EXPIRATION_TIME', 43200),
     /*
     |--------------------------------------------------------------------------
     | Token Prefix

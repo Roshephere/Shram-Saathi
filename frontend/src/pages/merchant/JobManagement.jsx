@@ -5,7 +5,8 @@ import StatusBadge from '../../components/ui/StatusBadge';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import ErrorMessage from '../../components/ui/ErrorMessage';
 import EmptyState from '../../components/ui/EmptyState';
-import { ShoppingBag, Eye, Clock, CheckCircle } from 'lucide-react';
+import Pagination from '../../components/ui/Pagination';
+import { ShoppingBag, Eye, Clock } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const tabs = [
@@ -21,6 +22,7 @@ export default function JobManagement() {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [meta, setMeta] = useState({});
 
   useEffect(() => { loadBookings(); }, []);
 
@@ -28,8 +30,17 @@ export default function JobManagement() {
     setLoading(true);
     setError(null);
     try {
-      const data = await bookingService.merchantBookings();
-      setBookings(Array.isArray(data) ? data : []);
+      const [active, completed, rejected] = await Promise.all([
+        bookingService.merchantBookings({ status: 'bidding' }),
+        bookingService.merchantBookings({ status: 'completed' }),
+        bookingService.merchantBookings({ status: 'rejected' }),
+      ]);
+      const all = [
+        ...(Array.isArray(active?.data) ? active.data : []),
+        ...(Array.isArray(completed?.data) ? completed.data : []),
+        ...(Array.isArray(rejected?.data) ? rejected.data : []),
+      ];
+      setBookings(all);
     } catch {
       setError('Failed to load bookings');
     }

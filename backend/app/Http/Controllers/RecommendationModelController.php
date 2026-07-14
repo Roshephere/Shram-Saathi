@@ -42,7 +42,10 @@ class RecommendationModelController extends Controller
     {
         $limit = $request->query('limit', 10);
 
-        $workers = $this->recommendationService->getWorkersByCategory($categoryId, $limit);
+        $latitude = $request->query('latitude') ? (float) $request->query('latitude') : null;
+    $longitude = $request->query('longitude') ? (float) $request->query('longitude') : null;
+    
+        $workers = $this->recommendationService->getWorkersByCategory($categoryId, $limit, $latitude, $longitude);
 
         return $this->success(
             $workers,

@@ -1,21 +1,23 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { categoryService } from '../../api/categoryService';
 import { requestService } from '../../api/requestService';
 import { userService } from '../../api/userService';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import LocationPicker from '../../components/ui/LocationPicker';
 import toast from 'react-hot-toast';
 import { MapPin, Navigation } from 'lucide-react';
 
 export default function CreateRequest() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [categories, setCategories] = useState([]);
   const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [locationMode, setLocationMode] = useState('saved');
   const [form, setForm] = useState({
-    category_id: '',
+    category_id: searchParams.get('category') || '',
     title: '',
     description: '',
     budget_min: '',
@@ -46,23 +48,13 @@ export default function CreateRequest() {
     }
   };
 
-  const getCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      toast.error('Geolocation not supported by your browser');
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setForm((prev) => ({
-          ...prev,
-          latitude: String(pos.coords.latitude),
-          longitude: String(pos.coords.longitude),
-          location_text: `${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`,
-        }));
-        toast.success('Location detected');
-      },
-      () => toast.error('Could not get current location. Enter manually.'),
-    );
+  const handleCustomLocationChange = ({ latitude, longitude, address }) => {
+    setForm((prev) => ({
+      ...prev,
+      latitude: latitude != null ? String(latitude) : '',
+      longitude: longitude != null ? String(longitude) : '',
+      location_text: address || prev.location_text,
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -127,9 +119,18 @@ export default function CreateRequest() {
 
   if (loading) return <LoadingSpinner text="Loading form..." />;
 
+  const merchantName = searchParams.get('merchant_name');
+
   return (
     <div className="max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Create Service Request</h1>
+
+      {merchantName && (
+        <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3 mb-4 text-sm text-indigo-800">
+          Requesting service from <strong>{merchantName}</strong>. They will be notified of your request.
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="bg-white rounded-xl border p-6 space-y-5">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
@@ -216,39 +217,12 @@ export default function CreateRequest() {
               </div>
             )
           ) : (
-            <div className="space-y-3 border rounded-lg p-4 bg-gray-50">
-              <button type="button" onClick={getCurrentLocation}
-                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700">
-                <Navigation className="h-4 w-4" />
-                Get Current Location
-              </button>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Latitude *</label>
-                  <input type="number" step="any" required value={form.latitude}
-                    onChange={(e) => setForm({ ...form, latitude: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
-                    placeholder="27.7172" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Longitude *</label>
-                  <input type="number" step="any" required value={form.longitude}
-                    onChange={(e) => setForm({ ...form, longitude: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
-                    placeholder="85.3240" />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Address / Label</label>
-                <input type="text" value={form.location_text}
-                  onChange={(e) => setForm({ ...form, location_text: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
-                  placeholder="e.g., Kathmandu, Nepal" />
-              </div>
-              <p className="text-xs text-gray-400">
-                This location will be saved to your account for future use.
-              </p>
-            </div>
+            <LocationPicker
+              value={form.latitude && form.longitude ? { lat: form.latitude, lng: form.longitude } : null}
+              onChange={handleCustomLocationChange}
+              height="240px"
+              placeholder="Search your service location..."
+            />
           )}
         </div>
 

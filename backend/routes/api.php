@@ -20,10 +20,12 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserLocationController;
 use App\Http\Controllers\RecommendationModelController;
 use App\Http\Controllers\MerchantLocationsController;
+use App\Http\Controllers\MerchantReviewController;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-
-
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     return $request->user();
@@ -48,8 +50,28 @@ Route::get('/articles/withoutCache', [ArticleController::class, 'allWithoutCache
 
 Route::get('give-role', function () {
     $user = \App\Models\User::find(1);
-    $user->assignRole('admin');
-    return 'Permission granted';
+    // dd($user->assignRole('admin'));
+$role = Role::where('name', 'admin')
+        ->where('guard_name', 'sanctum')
+        ->firstOrFail();
+
+    $user->assignRole($role);    return 'Permission granted';
+});
+Route::get('give-worker-role', function () {
+    app()[PermissionRegistrar::class]->forgetCachedPermissions();
+
+    $user = User::where('email', 'john@example.com')->firstOrFail();
+
+    $workerRole = Role::firstOrCreate([
+        'name' => 'worker',
+        'guard_name' => 'sanctum',
+    ]);
+
+    $user->assignRole($workerRole);
+
+    app()[PermissionRegistrar::class]->forgetCachedPermissions();
+
+    return 'Worker role granted to John';
 });
 
 Route::middleware(['auth:sanctum'])->group(function () {
@@ -90,6 +112,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/users', [UserController::class, 'index']);
     Route::get('/users/{id}', [UserController::class, 'show']);
     Route::delete('/users/{id}', [UserController::class, 'destroy']);
+    Route::get('/user/reviews', [UserController::class, 'reviews']);
 
     // Service categories create
     Route::get('/service-categories', [ServiceCategoryController::class, 'index']);
@@ -110,6 +133,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('service-requests/user/list', [ServiceRequestsController::class, 'userRequests']);
     Route::get('service-requests/available', [ServiceRequestsController::class, 'availableRequests']);
 
+    // Merchant Reviews
+    Route::get('merchants/{merchantId}/reviews', [MerchantReviewController::class, 'index']);
+    Route::post('reviews', [MerchantReviewController::class, 'store']);
+    Route::get('reviews/{id}', [MerchantReviewController::class, 'show']);
+    Route::delete('reviews/{id}', [MerchantReviewController::class, 'destroy']);
 
 });
 // Recommendations
@@ -140,10 +168,6 @@ Route::get('available-service-categories', [MerchantServiceCategoryController::c
 //merchant categories
 Route::get('merchant-categories', [MerchantCategoryController::class, 'index']);
 
-// Admin-only merchant actions
-Route::put('admin/merchants/{merchant}', [AdminMerchantController::class, 'update']);
-Route::post('admin/merchants/{merchant}/verify', [AdminMerchantController::class, 'verify']);
-Route::post('admin/merchants/{merchant}/suspend', [AdminMerchantController::class, 'suspend']);
 
 // Route::get('/set-cookie',function(){
 //     return response('Cookie Set')->cookie('username', 'roshab', 60);
@@ -164,9 +188,23 @@ Route::middleware(['auth:sanctum', 'is_admin'])->prefix('admin')->group(function
     Route::put('merchants/{merchantId}/verify', [AdminController::class, 'verifyMerchant']);
     Route::put('merchants/{merchantId}/reject', [AdminController::class, 'rejectMerchant']);
     Route::put('merchants/{merchantId}/suspend', [AdminController::class, 'suspendMerchant']);
+    Route::put('merchants/{merchantId}/resubmit', [AdminController::class, 'resubmitMerchant']);
 
+
+    // Admin-only merchant actions
+// Route::put('merchants/{merchant}', [AdminMerchantController::class, 'update']);
+// Route::post('merchants/{merchant}/verify', [AdminMerchantController::class, 'verify']);
+// Route::post('merchants/{merchant}/suspend', [AdminMerchantController::class, 'suspend']);
+
+    // booking route
+    Route::get('bookings', [AdminController::class, 'getBookings']);
     Route::get('transactions', [AdminController::class, 'getTransactions']);
     Route::get('dashboard', [AdminController::class, 'getDashboard']);
+
+    // Reviews
+    Route::get('reviews', [AdminController::class, 'getReviews']);
+    Route::put('reviews/{reviewId}/verify', [AdminController::class, 'verifyReview']);
+    Route::put('reviews/{reviewId}/reject', [AdminController::class, 'rejectReview']);
 
     Route::apiResource('roles', RoleController::class);
     Route::post('roles/seed-defaults', [RoleController::class, 'seedDefaults']);

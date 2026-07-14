@@ -6,6 +6,7 @@ import { bookingService } from '../../api/bookingService';
 import StatusBadge from '../../components/ui/StatusBadge';
 import EmptyState from '../../components/ui/EmptyState';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import Pagination from '../../components/ui/Pagination';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { ShoppingBag, Eye, XCircle, Star } from 'lucide-react';
 
@@ -19,14 +20,18 @@ export default function CustomerBookings() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('active');
   const [cancelTarget, setCancelTarget] = useState(null);
+  const [page, setPage] = useState(1);
 
-  const { data: bookings = [], isLoading, refetch } = useQuery({
-    queryKey: ['customer-bookings'],
-    queryFn: () => bookingService.getCustomerBookings().then((d) => Array.isArray(d) ? d : []),
+  const { data: result = { data: [], meta: {} }, isLoading, refetch } = useQuery({
+    queryKey: ['customer-bookings', page],
+    queryFn: () => bookingService.getCustomerBookings({ page, per_page: 15 }),
   });
 
+  const allBookings = Array.isArray(result.data) ? result.data : [];
+  const meta = result.meta || {};
+
   const currentTab = tabs.find((t) => t.key === activeTab);
-  const filtered = bookings.filter((b) => currentTab?.statuses.includes(b.status));
+  const filtered = allBookings.filter((b) => currentTab?.statuses.includes(b.status));
 
   const handleCancel = async () => {
     if (!cancelTarget) return;
@@ -49,16 +54,13 @@ export default function CustomerBookings() {
       <div className="border-b border-gray-200">
         <nav className="flex gap-6">
           {tabs.map((tab) => (
-            <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+            <button key={tab.key} onClick={() => { setActiveTab(tab.key); setPage(1); }}
               className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === tab.key
                   ? 'border-blue-600 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}>
               {tab.label}
-              <span className="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                {bookings.filter((b) => tab.statuses.includes(b.status)).length}
-              </span>
             </button>
           ))}
         </nav>
@@ -117,6 +119,8 @@ export default function CustomerBookings() {
           })}
         </div>
       )}
+
+      <Pagination meta={meta} onPageChange={setPage} />
 
       <ConfirmDialog
         open={!!cancelTarget}

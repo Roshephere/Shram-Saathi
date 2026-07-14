@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { adminService } from '../../api/adminService';
 import { merchantService } from '../../api/merchantService';
 import apiClient from '../../api/client';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
@@ -37,7 +38,7 @@ export default function MerchantManagement() {
   const handleVerify = async (merchant) => {
     setActionLoading(merchant.id);
     try {
-      await apiClient.put(`/admin/merchants/${merchant.id}/verify`);
+      await adminService.verifyMerchant(merchant.id);
       toast.success(`${merchant.business_name} verified!`);
       loadMerchants();
     } catch { toast.error('Verification failed'); }
@@ -47,7 +48,7 @@ export default function MerchantManagement() {
   const handleReject = async (merchant) => {
     setActionLoading(merchant.id);
     try {
-      await apiClient.put(`/admin/merchants/${merchant.id}/reject`);
+      await adminService.rejectMerchant(merchant.id);
       toast.success(`${merchant.business_name} rejected`);
       loadMerchants();
     } catch { toast.error('Rejection failed'); }
@@ -57,7 +58,7 @@ export default function MerchantManagement() {
   const handleSuspend = async (merchant) => {
     setActionLoading(merchant.id);
     try {
-      await apiClient.put(`/admin/merchants/${merchant.id}/suspend`);
+      await adminService.suspendMerchant(merchant.id);
       toast.success(`${merchant.business_name} suspended`);
       loadMerchants();
     } catch { toast.error('Suspension failed'); }

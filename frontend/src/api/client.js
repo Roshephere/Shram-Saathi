@@ -22,9 +22,16 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
+      const token = localStorage.getItem('auth_token');
+      const publicPaths = ['/home', '/auth/', '/login', '/register'];
+      const isPublicPage = publicPaths.some((p) => window.location.pathname.startsWith(p));
+
       localStorage.removeItem('auth_token');
       localStorage.removeItem('auth_user');
-      window.location.href = '/login';
+
+      if (token && !isPublicPage) {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
@@ -36,6 +43,14 @@ export function extractData(response) {
     return data.data;
   }
   return data;
+}
+
+export function extractPaginated(response) {
+  const data = response.data;
+  if (data && data.success !== undefined && data.data !== undefined) {
+    return { data: data.data, meta: data.meta || {} };
+  }
+  return { data: data, meta: {} };
 }
 
 export default apiClient;

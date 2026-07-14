@@ -30,13 +30,13 @@ export default function MerchantCard({ merchant, onSelect, showSelect = true, se
         {merchant.location && (
           <div className="flex items-center gap-1.5 text-sm text-gray-600">
             <MapPin className="h-3.5 w-3.5" />
-            {merchant.location}
+            {merchant.location?.address || (typeof merchant.location === 'string' ? merchant.location : '')}
           </div>
         )}
-        {merchant.distance !== undefined && (
+        {(merchant.distance_km ?? merchant.distance) !== undefined && (
           <div className="flex items-center gap-1.5 text-sm text-gray-600">
             <MapPin className="h-3.5 w-3.5" />
-            {Number(merchant.distance).toFixed(1)} km away
+            {Number(merchant.distance_km ?? merchant.distance).toFixed(1)} km away
           </div>
         )}
         {merchant.hourly_rate && (

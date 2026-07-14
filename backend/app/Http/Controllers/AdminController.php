@@ -16,6 +16,33 @@ class AdminController extends Controller
     }
 
     /**
+     * Get all bookings - GET /admin/bookings
+     */
+    public function getBookings(Request $request): JsonResponse
+    {
+        try {
+            $bookings = $this->adminService->getAllBookings($request->only(['status', 'merchant_id'])); 
+
+            return $this->success(
+                $bookings->items(),
+                'Bookings retrieved',
+                200,
+                [
+                    'pagination' => [
+                        'total' => $bookings->total(),
+                        'per_page' => $bookings->perPage(),
+                        'current_page' => $bookings->currentPage(),
+                        'last_page' => $bookings->lastPage(),
+                    ]
+                ]
+            );
+        }catch (\Exception $e) {
+            return $this->error($e->getMessage(), 400);
+        
+        }
+    }
+
+    /**
      * Get pending merchants - GET /admin/merchants/pending
      */
     public function getPendingMerchants(): JsonResponse
@@ -127,6 +154,61 @@ class AdminController extends Controller
         try {
             $stats = $this->adminService->getDashboardStats();
             return $this->success($stats, 'Dashboard stats retrieved');
+        } catch (\Exception $e) {
+            return $this->error($e->getMessage(), 400);
+        }
+    }
+
+    public function getReviews(Request $request): JsonResponse
+    {
+        try {
+            $reviews = $this->adminService->getAllReviews($request->only(['merchant_id', 'user_id']));
+
+            return $this->success(
+                $reviews->items(),
+                'Reviews retrieved',
+                200,
+                [
+                    'pagination' => [
+                        'total' => $reviews->total(),
+                        'per_page' => $reviews->perPage(),
+                        'current_page' => $reviews->currentPage(),
+                        'last_page' => $reviews->lastPage(),
+                    ]
+                ]
+            );
+        } catch (\Exception $e) {
+            return $this->error($e->getMessage(), 400);
+        }
+    }
+
+    public function resubmitMerchant(int $merchantId): JsonResponse
+    {
+        try {
+            $merchant = $this->adminService->resubmitMerchant($merchantId);
+            return $this->success($merchant, 'Merchant resubmitted for review');
+        } catch (\Exception $e) {
+            return $this->error($e->getMessage(), 400);
+        }
+    }
+
+    public function verifyReview(int $reviewId): JsonResponse
+    {
+        try {
+            $review = \App\Models\MerchantReview::findOrFail($reviewId);
+            $review->update(['is_verified' => true]);
+            return $this->success($review, 'Review verified');
+        } catch (\Exception $e) {
+            return $this->error($e->getMessage(), 400);
+        }
+    }
+
+    public function rejectReview(int $reviewId): JsonResponse
+    {
+        try {
+            $review = \App\Models\MerchantReview::findOrFail($reviewId);
+            $review->update(['is_verified' => false]);
+            return $this->success($review, 'Review rejected');
         } catch (\Exception $e) {
             return $this->error($e->getMessage(), 400);
         }

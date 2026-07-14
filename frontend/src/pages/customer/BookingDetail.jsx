@@ -5,9 +5,36 @@ import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import ErrorMessage from '../../components/ui/ErrorMessage';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import StatusBadge from '../../components/ui/StatusBadge';
-import { ArrowLeft, DollarSign, Calendar, User, FileText, Star, Clock, MapPin } from 'lucide-react';
+import { ArrowLeft, DollarSign, User, FileText, Star, MapPin, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useState } from 'react';
+
+const STEPS = ['pending', 'accepted', 'in_progress', 'completed'];
+const STEP_LABELS = { pending: 'Pending', accepted: 'Accepted', in_progress: 'In Progress', completed: 'Completed' };
+
+function StatusTimeline({ current }) {
+  const idx = STEPS.indexOf(current);
+  return (
+    <div className="flex items-center gap-1 mt-4">
+      {STEPS.map((step, i) => (
+        <div key={step} className="flex items-center flex-1">
+          <div className="flex flex-col items-center flex-1">
+            <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold
+              ${i <= idx ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-500'}`}>
+              {i < idx ? <CheckCircle className="h-4 w-4" /> : i + 1}
+            </div>
+            <span className={`text-xs mt-1 ${i <= idx ? 'text-indigo-600 font-medium' : 'text-gray-400'}`}>
+              {STEP_LABELS[step]}
+            </span>
+          </div>
+          {i < STEPS.length - 1 && (
+            <div className={`h-0.5 flex-1 mx-1 rounded ${i < idx ? 'bg-indigo-600' : 'bg-gray-200'}`} />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default function CustomerBookingDetail() {
   const { bookingId } = useParams();
@@ -37,6 +64,7 @@ export default function CustomerBookingDetail() {
 
   const merchant = booking.merchant;
   const serviceRequest = booking.service_request || booking.serviceRequest;
+  const location = booking.location || serviceRequest?.location;
   const canCancel = ['accepted', 'in_progress'].includes(booking.status);
   const canReview = booking.status === 'completed';
 
@@ -55,6 +83,8 @@ export default function CustomerBookingDetail() {
           <StatusBadge status={booking.status} />
         </div>
 
+        <StatusTimeline current={booking.status} />
+
         <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div className="space-y-4">
             <h2 className="font-semibold text-gray-900 flex items-center gap-2"><User className="h-4 w-4" /> Worker</h2>
@@ -66,7 +96,11 @@ export default function CustomerBookingDetail() {
                   {Number(merchant.avg_rating).toFixed(1)} ({merchant.review_count || 0} reviews)
                 </p>
               )}
-              {merchant?.phone && <p className="text-sm text-gray-500 mt-1">{merchant.phone}</p>}
+              {merchant?.phone && (
+                <p className="text-sm text-gray-500 mt-1 flex items-center gap-1">
+                  <span>{merchant.phone}</span>
+                </p>
+              )}
             </div>
           </div>
 
@@ -99,6 +133,15 @@ export default function CustomerBookingDetail() {
           </div>
         </div>
 
+        {location && (
+          <div className="mt-4">
+            <h2 className="font-semibold text-gray-900 flex items-center gap-2 mb-2"><MapPin className="h-4 w-4" /> Location</h2>
+            <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-700">
+              {location.address || `${location.latitude}, ${location.longitude}`}
+            </div>
+          </div>
+        )}
+
         {booking.special_notes && (
           <div className="mt-4">
             <h2 className="font-semibold text-gray-900 flex items-center gap-2 mb-2"><FileText className="h-4 w-4" /> Notes</h2>
@@ -115,6 +158,15 @@ export default function CustomerBookingDetail() {
             </button>
           </div>
         )}
+
+        {booking.status === 'completed' && (
+          <div className="mt-6 pt-4 border-t">
+            <div className="flex items-center gap-2 text-green-700 bg-green-50 rounded-lg p-3">
+              <CheckCircle className="h-5 w-5" />
+              <span className="text-sm font-medium">Work completed! Leave a review to help others.</span>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="flex justify-end gap-3">
@@ -126,7 +178,7 @@ export default function CustomerBookingDetail() {
         )}
         {canReview && (
           <button onClick={() => navigate(`/customer/reviews?booking=${booking.id}`)}
-            className="px-4 py-2 text-sm font-medium text-yellow-600 bg-yellow-50 rounded-lg hover:bg-yellow-100 flex items-center gap-1.5">
+            className="flex items-center gap-1.5 px-5 py-2.5 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-sm">
             <Star className="h-4 w-4" /> Leave Review
           </button>
         )}

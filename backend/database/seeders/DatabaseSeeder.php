@@ -20,8 +20,8 @@ class DatabaseSeeder extends Seeder
         //     'email' => 'test@example.com',
         // ]);
 
-        $this->call(ArticalSeeder::class);
+        // $this->call(ArticalSeeder::class);
         
-        $this->call([MerchantSeeder::class, MerchantServiceCategorySeeder::class,]);
+        $this->call([MerchantSeeder::class, MerchantServiceCategorySeeder::class, RoleSeeder::class]);
     }
 }

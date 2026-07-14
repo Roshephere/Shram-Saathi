@@ -1,4 +1,4 @@
-import apiClient, { extractData } from './client';
+import apiClient, { extractData, extractPaginated } from './client';
 
 export const adminService = {
   async getDashboardStats() {
@@ -26,8 +26,33 @@ export const adminService = {
     return response.data;
   },
 
+  async getBookings(params) {
+    const response = await apiClient.get('/admin/bookings', { params });
+    return extractPaginated(response);
+  },
+
+  async getReviews(params) {
+    const response = await apiClient.get('/admin/reviews', { params });
+    return extractPaginated(response);
+  },
+
+  async verifyReview(id) {
+    const response = await apiClient.put(`/admin/reviews/${id}/verify`);
+    return extractData(response);
+  },
+
+  async rejectReview(id) {
+    const response = await apiClient.put(`/admin/reviews/${id}/reject`);
+    return extractData(response);
+  },
+
+  async resubmitMerchant(id) {
+    const response = await apiClient.put(`/admin/merchants/${id}/resubmit`);
+    return extractData(response);
+  },
+
   async getTransactions(params) {
     const response = await apiClient.get('/admin/transactions', { params });
-    return extractData(response);
+    return extractPaginated(response);
   },
 };

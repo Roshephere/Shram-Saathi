@@ -44,8 +44,9 @@ class AuthController extends Controller
                 'email' => ['The provided credentials are incorrect.'],
             ]);
         }
+        $lifetime = $request->boolean('remember') ? config('sanctum.remember_token_expiration') : config('sanctum.access_token_expiration');
 
-        $expiresAt = $request->boolean('remember') ? now()->addDays(30) : now()->addMinutes(30);
+        $expiresAt = now()->addMinutes($lifetime);
         $user = Auth::user();
         $token = $user->createToken('auth-token', ['*'], $expiresAt)->plainTextToken;
 

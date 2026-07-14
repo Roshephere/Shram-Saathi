@@ -45,9 +45,9 @@ class MerchantLocationsController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(MerchantLocation $merchantLocations)
+    public function show(MerchantLocation $merchantLocation)
     {
-        $id = $merchantLocations->id;
+        $id = $merchantLocation->id;
         $location = $this->merchantLocationService->getById($id);
         return $this->success($location, 'Merchant location obtained successfully.');
     }
@@ -55,7 +55,7 @@ class MerchantLocationsController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(MerchantLocation $merchantLocations)
+    public function edit(MerchantLocation $merchantLocation)
     {
         //
     }
@@ -63,9 +63,10 @@ class MerchantLocationsController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, MerchantLocation $merchantLocations)
+    public function update(MerchantLocationRequest $request, MerchantLocation $merchantLocation)
     {
-        $id = $merchantLocations->id;
+        // dd($merchantLocation); 
+        $id = $merchantLocation->id;
         $location = $this->merchantLocationService->updateMerchantLocation($id, $request->validated());
         return $this->success($location, 'Merchant location updated successfully.');
     }
@@ -73,9 +74,9 @@ class MerchantLocationsController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(MerchantLocation $merchantLocations)
+    public function destroy(MerchantLocation $merchantLocation)
     {
-        $id = $merchantLocations->id;
+        $id = $merchantLocation->id;
         $this->merchantLocationService->deleteMerchantLocation($id);
         return $this->success(null, 'Merchant location deleted successfully.');
     }

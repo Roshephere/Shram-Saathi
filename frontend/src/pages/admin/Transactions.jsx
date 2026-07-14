@@ -4,16 +4,23 @@ import DataTable from '../../components/ui/DataTable';
 import StatusBadge from '../../components/ui/StatusBadge';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import ErrorMessage from '../../components/ui/ErrorMessage';
+import EmptyState from '../../components/ui/EmptyState';
 import { DollarSign, TrendingUp, Users, Clock } from 'lucide-react';
 
 const columns = [
   { key: 'created_at', label: 'Date', render: (row) => row.created_at ? new Date(row.created_at).toLocaleDateString() : '-' },
   { key: 'booking_id', label: 'Booking ID' },
-  { key: 'merchant_name', label: 'Merchant' },
-  { key: 'customer_name', label: 'Customer' },
-  { key: 'amount', label: 'Amount', render: (row) => row.amount ? `NPR ${Number(row.amount).toLocaleString()}` : '-' },
-  { key: 'commission', label: 'Commission', render: (row) => row.commission ? `NPR ${Number(row.commission).toLocaleString()}` : '-' },
-  { key: 'net', label: 'Net', render: (row) => row.net ? `NPR ${Number(row.net).toLocaleString()}` : '-' },
+  {
+    key: 'merchant', label: 'Merchant',
+    render: (row) => row.merchant?.business_name || `Merchant #${row.merchant_id}` || '-',
+  },
+  {
+    key: 'customer', label: 'Customer',
+    render: (row) => row.booking?.customer?.name || row.booking?.customer?.email || `User #${row.booking?.customer_id}` || '-',
+  },
+  { key: 'service_amount', label: 'Amount', render: (row) => row.service_amount ? `NPR ${Number(row.service_amount).toLocaleString()}` : '-' },
+  { key: 'commission_amount', label: 'Commission', render: (row) => row.commission_amount ? `NPR ${Number(row.commission_amount).toLocaleString()}` : '-' },
+  { key: 'merchant_amount', label: 'Net', render: (row) => row.merchant_amount ? `NPR ${Number(row.merchant_amount).toLocaleString()}` : '-' },
   { key: 'status', label: 'Status', render: (row) => <StatusBadge status={row.status} /> },
 ];
 
@@ -31,10 +38,10 @@ export default function AdminTransactions() {
     setLoading(true);
     setError(null);
     try {
-      const data = await adminService.getTransactions();
-      setTransactions(Array.isArray(data) ? data : []);
+      const result = await adminService.getTransactions();
+      setTransactions(Array.isArray(result?.data) ? result.data : []);
     } catch {
-      setError('Transactions endpoint pending');
+      setError('Failed to load transactions');
     }
     setLoading(false);
   };
@@ -42,8 +49,8 @@ export default function AdminTransactions() {
   const filtered = transactions.filter((t) => {
     const matchSearch = !search ||
       (t.booking_id && String(t.booking_id).toLowerCase().includes(search.toLowerCase())) ||
-      (t.merchant_name && t.merchant_name.toLowerCase().includes(search.toLowerCase())) ||
-      (t.customer_name && t.customer_name.toLowerCase().includes(search.toLowerCase()));
+      (t.merchant?.business_name && t.merchant.business_name.toLowerCase().includes(search.toLowerCase())) ||
+      (t.booking?.customer?.name && t.booking.customer.name.toLowerCase().includes(search.toLowerCase()));
 
     let matchDate = true;
     if (dateFrom && t.created_at) {
@@ -56,9 +63,9 @@ export default function AdminTransactions() {
     return matchSearch && matchDate;
   });
 
-  const totalRevenue = filtered.reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
-  const totalCommission = filtered.reduce((sum, t) => sum + (Number(t.commission) || 0), 0);
-  const uniqueMerchants = new Set(filtered.map((t) => t.merchant_name).filter(Boolean)).size;
+  const totalRevenue = filtered.reduce((sum, t) => sum + (Number(t.service_amount) || 0), 0);
+  const totalCommission = filtered.reduce((sum, t) => sum + (Number(t.commission_amount) || 0), 0);
+  const uniqueMerchants = new Set(filtered.map((t) => t.merchant?.business_name).filter(Boolean)).size;
   const pendingCount = filtered.filter((t) => t.status === 'pending').length;
 
   const stats = [
@@ -120,11 +127,12 @@ export default function AdminTransactions() {
         <DataTable columns={columns} data={filtered} loading={loading} />
       </div>
 
-      {(transactions.length === 0 || filtered.length === 0) && (
-        <div className="p-4 bg-gray-50 rounded-lg border-2 border-dashed text-center">
-          <p className="text-xs text-gray-400 font-mono">
-            Backend endpoint pending: GET /api/admin/transactions (requires TransactionController implementation)
-          </p>
+      {transactions.length === 0 && (
+        <EmptyState title="No transactions yet" description="Transactions will appear here once bookings are completed." icon={DollarSign} />
+      )}
+      {transactions.length > 0 && filtered.length === 0 && (
+        <div className="bg-white rounded-lg border p-8 text-center text-gray-500">
+          No transactions match your search
         </div>
       )}
     </div>

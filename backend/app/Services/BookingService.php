@@ -3,10 +3,13 @@
 namespace App\Services;
 
 use App\Models\Booking;
+use App\Models\Merchant;
 use App\Models\ServiceRequest;
+use App\Models\Transaction;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class BookingService
 {
@@ -34,7 +37,8 @@ class BookingService
         if (Booking::where('service_request_id', $serviceRequestId)
             ->where('merchant_id', $merchantId)
             ->whereIn('status', ['bidding', 'accepted'])
-            ->exists()) {
+            ->exists()
+        ) {
             throw new \Exception('You already have an active bid on this request');
         }
 
@@ -253,5 +257,92 @@ class BookingService
         }
 
         return $booking;
+    }
+
+    public function confirmTransaction(int $transactionId, int $userId): Transaction
+    {
+        $transaction = Transaction::findOrFail($transactionId);
+
+        // Ensure this is the customer's booking
+        if ($transaction->booking->customer_id !== $userId) {
+            throw new \Exception('Only the customer can confirm payment');
+        }
+
+        // Transaction must be pending
+        if ($transaction->status !== 'pending') {
+            throw new \Exception('Transaction is already ' . $transaction->status);
+        }
+
+        // Customer hasn't confirmed yet
+        if ($transaction->customer_confirmed_at) {
+            throw new \Exception('You have already confirmed this payment');
+        }
+
+        $transaction->customer_confirmed_at = now();
+        $transaction->save();
+
+        // If merchant already confirmed too, auto-complete
+        if ($transaction->merchant_confirmed_at) {
+            $transaction->update(['status' => 'completed']);
+            $transaction->booking->update(['status' => 'completed']);
+        }
+
+        return $transaction;
+    }
+
+
+    public function confirmReceive(int $transactionId, int $userId): Transaction
+    {
+        $transaction = Transaction::findOrFail($transactionId);
+        // Log::info("Confirming receive for transaction {$transactionId} by user {$userId}");
+        $merchantId = Merchant::where('user_id', $userId)->value('id');
+        // Ensure this is the merchant's transaction
+        if ($transaction->merchant_id !== $merchantId) {
+            throw new \Exception('Only the merchant can confirm receipt');
+        }
+
+        // Transaction must be pending
+        if ($transaction->status !== 'pending') {
+            throw new \Exception('Transaction is already ' . $transaction->status);
+        }
+
+        // Customer MUST confirm first
+        if (!$transaction->customer_confirmed_at) {
+            throw new \Exception('Customer has not confirmed payment yet');
+        }
+
+        // Merchant hasn't confirmed yet
+        if ($transaction->merchant_confirmed_at) {
+            throw new \Exception('You have already confirmed this payment');
+        }
+
+        // Log::info("Setting merchant_confirmed_at for transaction {$transactionId} by user {$userId} ie Merchant ID {$merchantId}");
+
+        $transaction->merchant_confirmed_at = now();
+        $transaction->save();
+
+        // If customer already confirmed, auto-complete
+        if ($transaction->customer_confirmed_at) {
+            $transaction->update(['status' => 'completed']);
+            $transaction->booking->update(['status' => 'completed']);
+        }
+
+        return $transaction;
+    }
+
+    public function getTransactionForBooking(int $bookingId, int $userId): Transaction
+    {
+        $transaction = Transaction::where('booking_id', $bookingId)->firstOrFail();
+
+        // only customer
+        $isCustomer = $transaction->booking->customer_id === $userId;
+        // only merchant
+        $isMerchant = $transaction->booking->merchant->user_id === $userId;
+
+        if (!$isCustomer && !$isMerchant) {
+            throw new \Exception('You are not the customer or merchant of this booking.');
+        }
+
+        return $transaction;
     }
 }

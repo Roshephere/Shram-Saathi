@@ -35,17 +35,18 @@ class RecommendationModelController extends Controller
     }
 
     /**
-     * Get workers by category (no distance filter)
+     * Get workers by category, optionally filtered by distance when location provided
      * GET /recommendations/category/{categoryId}
      */
     public function getByCategory($categoryId, Request $request)
     {
         $limit = $request->query('limit', 10);
+        $maxDistance = $request->query('max_distance', 50);
 
         $latitude = $request->query('latitude') ? (float) $request->query('latitude') : null;
-    $longitude = $request->query('longitude') ? (float) $request->query('longitude') : null;
+        $longitude = $request->query('longitude') ? (float) $request->query('longitude') : null;
     
-        $workers = $this->recommendationService->getWorkersByCategory($categoryId, $limit, $latitude, $longitude);
+        $workers = $this->recommendationService->getWorkersByCategory($categoryId, $limit, $latitude, $longitude, $maxDistance);
 
         return $this->success(
             $workers,

@@ -55,4 +55,14 @@ export const adminService = {
     const response = await apiClient.get('/admin/transactions', { params });
     return extractPaginated(response);
   },
+
+  async sendPaymentReminder(bookingId, merchantId) {
+    const response = await apiClient.post(`/admin/transactions/${bookingId}/remind`, { merchant_id: merchantId });
+    return extractData(response);
+  },
+
+  async blockMerchant(merchantId) {
+    const response = await apiClient.put(`/admin/merchants/${merchantId}/block`);
+    return extractData(response);
+  },
 };

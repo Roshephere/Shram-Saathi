@@ -60,4 +60,22 @@ export const bookingService = {
     const response = await apiClient.get('/merchant/bookings', { params });
     return extractPaginated(response);
   },
+
+  /** GET /bookings/{id}/transaction - get transaction for a booking */
+  async getTransaction(bookingId) {
+    const response = await apiClient.get(`/bookings/${bookingId}/transaction`);
+    return extractData(response);
+  },
+
+  /** PUT /transactions/{id}/confirm - customer confirms payment */
+  async confirmPayment(transactionId) {
+    const response = await apiClient.put(`/transactions/${transactionId}/confirm`);
+    return extractData(response);
+  },
+
+  /** PUT /transactions/{id}/receive - merchant confirms payment received */
+  async receivePayment(transactionId) {
+    const response = await apiClient.put(`/transactions/${transactionId}/receive`);
+    return extractData(response);
+  },
 };

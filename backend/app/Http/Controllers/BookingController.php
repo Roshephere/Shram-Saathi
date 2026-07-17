@@ -225,4 +225,33 @@ class BookingController extends Controller
             return $this->error($e->getMessage(), 400);
         }
     }
+
+    public function confirmTransaction(int $id) {
+
+    try{
+        $transaction = $this->bookingService->confirmTransaction($id, auth()->id());
+        return $this->success($transaction, 'Transaction confirmed.', 200);
+    } catch (\Exception $e) {
+        return $this->error($e->getMessage(), 400);
+    }
+    }
+
+    public function confirmReceive(int $id){
+        
+        try{
+            $transaction = $this->bookingService->confirmReceive($id, auth()->id());
+            return $this->success($transaction, 'Transaction received confirmed.', 200);
+        } catch (\Exception $e) {
+            return $this->error($e->getMessage(), 400);
+        }
+    }
+    public function getTransactionForBooking(int $id) {
+        try{
+            $transaction = $this->bookingService->getTransactionForBooking($id, auth()->id());
+            return $this->success($transaction, 'Transaction retrieved successfully.', 200);
+        } catch (\Exception $e) {
+            return $this->error($e->getMessage(), 400);
+        }
+    }
 }
+

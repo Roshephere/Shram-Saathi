@@ -47,7 +47,7 @@ class AuthController extends Controller
         $lifetime = $request->boolean('remember') ? config('sanctum.remember_token_expiration') : config('sanctum.access_token_expiration');
 
         $expiresAt = now()->addMinutes($lifetime);
-        $user = Auth::user();
+        $user = Auth::user()->load('merchant');
         $token = $user->createToken('auth-token', ['*'], $expiresAt)->plainTextToken;
 
         return response()->json([
@@ -69,9 +69,8 @@ class AuthController extends Controller
 
     public function me(Request $request)
     {
-        // dd($request->user()->currentAccessToken());
-        return response()->json($request->user());
-
+        $user = $request->user()->load('merchant');
+        return response()->json($user);
     }
 
     public function updateProfile(Request $request)

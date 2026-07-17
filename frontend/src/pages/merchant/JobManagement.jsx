@@ -30,13 +30,17 @@ export default function JobManagement() {
     setLoading(true);
     setError(null);
     try {
-      const [active, completed, rejected] = await Promise.all([
+      const [bidding, accepted, inProgress, completed, rejected] = await Promise.all([
         bookingService.merchantBookings({ status: 'bidding' }),
+        bookingService.merchantBookings({ status: 'accepted' }),
+        bookingService.merchantBookings({ status: 'in_progress' }),
         bookingService.merchantBookings({ status: 'completed' }),
         bookingService.merchantBookings({ status: 'rejected' }),
       ]);
       const all = [
-        ...(Array.isArray(active?.data) ? active.data : []),
+        ...(Array.isArray(bidding?.data) ? bidding.data : []),
+        ...(Array.isArray(accepted?.data) ? accepted.data : []),
+        ...(Array.isArray(inProgress?.data) ? inProgress.data : []),
         ...(Array.isArray(completed?.data) ? completed.data : []),
         ...(Array.isArray(rejected?.data) ? rejected.data : []),
       ];

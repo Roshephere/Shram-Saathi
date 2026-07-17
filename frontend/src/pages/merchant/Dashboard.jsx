@@ -58,6 +58,7 @@ export default function MerchantDashboard() {
       </div>
     );
   }
+  console.log('Merchant Data:', merchant);
 
   return (
     <div className="space-y-6">

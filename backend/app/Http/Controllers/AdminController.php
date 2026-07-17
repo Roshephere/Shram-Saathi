@@ -6,6 +6,7 @@ use App\Services\AdminService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class AdminController extends Controller
 {
@@ -153,6 +154,7 @@ class AdminController extends Controller
     {
         try {
             $stats = $this->adminService->getDashboardStats();
+            Log::info('Dashboard stats retrieved: ' . json_encode($stats));
             return $this->success($stats, 'Dashboard stats retrieved');
         } catch (\Exception $e) {
             return $this->error($e->getMessage(), 400);

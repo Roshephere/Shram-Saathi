@@ -135,34 +135,65 @@ class RecommendationService
     }
 
     /**
-     * Get workers by category only (no distance filter)
+     * Get workers by category, optionally filtered by distance when lat/lng provided
      */
-    public function getWorkersByCategory(int $categoryId, int $limit = 10,  ?float $userLat = null, ?float $userLon = null)
+    public function getWorkersByCategory(int $categoryId, int $limit = 10, ?float $userLat = null, ?float $userLon = null, float $maxDistance = 50)
     {
-        $merchants = Merchant::with(['user', 'serviceCategories', 'locations'])
+        $query = Merchant::with(['user', 'serviceCategories', 'locations'])
             ->whereHas('serviceCategories', function ($query) use ($categoryId) {
                 $query->where('service_category_id', $categoryId);
             })
-            ->where('status', 'active')
-            ->orderByDesc('avg_rating')
-            ->take($limit)
-            ->get();
+            ->where('status', 'active');
 
-             return $merchants->map(function ($merchant) use ($userLat, $userLon) {
-        $primaryLocation = $merchant->locations->firstWhere('is_primary', true) ?? $merchant->locations->first();
+        // Geohash pre-filter when location is provided
+        if ($userLat && $userLon) {
+            $prefixLength = GeoHash::precisionForRadius($maxDistance, $userLat);
+            $userGeohashPrefix = substr(
+                GeoHash::encode($userLat, $userLon, 8),
+                0,
+                $prefixLength
+            );
 
-        $data = $merchant->toArray();
-        $data['location'] = $primaryLocation?->toArray();
-
-        if ($primaryLocation && $userLat && $userLon) {
-            $data['distance_km'] = round($this->calculateDistance(
-                $userLat, $userLon,
-                (float) $primaryLocation->latitude,
-                (float) $primaryLocation->longitude
-            ), 2);
+            $query->whereHas('locations', function ($q) use ($userGeohashPrefix) {
+                $q->where('is_primary', true)
+                  ->where('geohash', 'like', $userGeohashPrefix . '%');
+            });
         }
 
-        return $data;
-    });
+        $merchants = $query->orderByDesc('avg_rating')
+            ->take($limit * 3) // fetch extra to account for distance filtering
+            ->get();
+
+        return $merchants->map(function ($merchant) use ($userLat, $userLon, $maxDistance) {
+            $primaryLocation = $merchant->locations->firstWhere('is_primary', true) ?? $merchant->locations->first();
+
+            $data = $merchant->toArray();
+            $data['location'] = $primaryLocation?->toArray();
+
+            if ($primaryLocation && $userLat && $userLon) {
+                $distance = $this->calculateDistance(
+                    $userLat, $userLon,
+                    (float) $primaryLocation->latitude,
+                    (float) $primaryLocation->longitude
+                );
+                $data['distance_km'] = round($distance, 2);
+
+                // Skip workers beyond max distance
+                if ($distance > $maxDistance) {
+                    return null;
+                }
+
+                $data['score'] = $this->calculateRecommendationScore($distance, $merchant->avg_rating ?? 0);
+            } else {
+                $data['distance_km'] = null;
+                $data['score'] = ($merchant->avg_rating ?? 0) / 5 * 60;
+            }
+
+            return $data;
+        })
+        ->filter()
+        ->sortByDesc('score')
+        ->take($limit)
+        ->values();
     }
 }

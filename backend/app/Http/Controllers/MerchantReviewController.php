@@ -8,6 +8,7 @@ use App\Models\Booking;
 use App\Models\Merchant;
 use App\Models\MerchantReview;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class MerchantReviewController extends Controller
 {
@@ -51,48 +52,54 @@ class MerchantReviewController extends Controller
      */
     public function store(StoreReviewRequest $request)
     {
-        try{
+        try {
             $validated = $request->validated();
             $userId = auth()->id();
 
             $booking = Booking::with('serviceRequest')->findOrFail($validated['booking_id']);
 
-            if($booking->customer_id !== $userId){
+            if ($booking->customer_id !== $userId) {
                 return $this->error('You can only review your own bookings.', 403);
             }
-            if($booking->status !== 'completed'){
+            if ($booking->status !== 'completed') {
                 return $this->error('You can only review completed bookings.', 400);
             }
 
             // check if already available
             $existingReview = MerchantReview::where('service_request_id', $booking->service_request_id)->where('user_id', $userId)->exists();
-            if($existingReview){
+            if ($existingReview) {
                 return $this->error('You have already reviewed this booking.', 422);
             }
 
             $review = MerchantReview::create([
-                'merchant_id'=> $booking->merchant_id,
-                'user_id'=> $userId,
-                'service_request_id'=> $booking->service_request_id,
-                'rating_overall'=> $validated['rating_overall'],
-                'rating_skill'=> $validated['rating_skill']?? null,
-                'rating_timeliness'=> $validated['rating_timeliness']?? null,
-                'rating_communication'=> $validated['rating_communication']?? null,
-                'review_text'=> $validated['review_text']?? null,
-                'is_verified'=> true,
+                'merchant_id' => $booking->merchant_id,
+                'user_id' => $userId,
+                'service_request_id' => $booking->service_request_id,
+                'rating_overall' => $validated['rating_overall'],
+                'rating_skill' => $validated['rating_skill'] ?? null,
+                'rating_timeliness' => $validated['rating_timeliness'] ?? null,
+                'rating_communication' => $validated['rating_communication'] ?? null,
+                'review_text' => $validated['review_text'] ?? null,
+                'is_verified' => true,
             ]);
 
-            $merchant = Merchant::find($booking->merchant_id);
-            if($merchant){
-                $merchant->updateAverageRating();
+            try {
+
+                $merchant = Merchant::find($booking->merchant_id);
+                if ($merchant) {
+                    $merchant->updateAverageRating();
+                }
+            } catch (\Exception $e) {
+                Log::info('Error updating merchant average rating: ' . $e->getMessage());
+                return $this->error('An error occurred while updating the merchant average rating.', 500);
             }
             return $this->success(
-                new MerchantReviewResource($review->load(['user', 'merchant', 'booking'])),
+                new MerchantReviewResource($review->load(['user', 'merchant'])),
                 'Review submitted successfully.',
                 201
-                );
-
+            );
         } catch (\Exception $e) {
+            Log::info('Error submitting review: ' . $e->getMessage());
             return $this->error('An error occurred while submitting the review.', 500);
         }
     }
@@ -126,12 +133,12 @@ class MerchantReviewController extends Controller
      */
     public function destroy(MerchantReview $merchantReview)
     {
-        try{
+        try {
             $review = $merchantReview;
             $userId = auth()->id();
-            $isAdmin= auth()->user()->hasRole('admin');
+            $isAdmin = auth()->user()->hasRole('admin');
 
-            if($review->user_id !== $userId && !$isAdmin){
+            if ($review->user_id !== $userId && !$isAdmin) {
                 return $this->error('You can only delete your own reviews.', 403);
             }
 
@@ -139,12 +146,11 @@ class MerchantReviewController extends Controller
             $review->delete();
 
             $merchant = Merchant::find($merchantId);
-            if($merchant){
-                $merchant->updateAverageRating();  
+            if ($merchant) {
+                $merchant->updateAverageRating();
             }
             return $this->success(null, 'Review deleted successfully.');
-        }
-catch (\Exception $e) {
+        } catch (\Exception $e) {
             return $this->error('An error occurred while deleting the review.', 500);
         }
     }

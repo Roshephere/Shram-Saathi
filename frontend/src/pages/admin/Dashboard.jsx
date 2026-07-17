@@ -18,6 +18,7 @@ export default function AdminDashboard() {
     try {
       const dashboardStats = await adminService.getDashboardStats();
       setStats(dashboardStats);
+      console.log('Dashboard Stats:', dashboardStats);
     } catch {
       try {
         const merchants = await merchantService.getAll();

@@ -13,7 +13,7 @@ class MerchantReviewObserver
     public function created(MerchantReview $merchantReview): void
     {
         if ($merchantReview->merchant_id) {
-            Merchant::find($merchantReview->merchant_id)->updateAvergeRating();
+            Merchant::find($merchantReview->merchant_id)->updateAverageRating();
         }
 
     }

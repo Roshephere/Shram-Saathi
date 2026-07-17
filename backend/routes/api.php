@@ -96,6 +96,13 @@ Route::middleware(['auth:sanctum'])->group(function () {
         
         // Get merchant's bookings
         Route::get('merchant/bookings', [BookingController::class, 'merchantBookings']);
+
+        // Confirmation routes
+        Route::put('transactions/{id}/confirm',[BookingController::class, 'confirmTransaction']);
+        Route::put('transactions/{id}/receive',[BookingController::class, 'confirmReceive']);  
+
+        // Get Transaction for booking.
+        Route::get('bookings/{id}/transaction', [BookingController::class, 'getTransactionForBooking']);
     });
 
     Route::get('/me', [AuthController::class, 'me']);

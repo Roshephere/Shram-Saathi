@@ -18,9 +18,31 @@ export default function MerchantLogin() {
       const res = await login(form.email, form.password);
       toast.success('Welcome back!');
       const role = res.user?.role;
-      if (role === 'admin') navigate('/admin/dashboard');
-      else if (role === 'worker') navigate('/merchant/dashboard');
-      else navigate('/customer/dashboard');
+      if (role === 'admin') {
+        navigate('/admin/dashboard');
+      } else if (role === 'worker') {
+        // Check if merchant registration is complete
+        const status = res.user?.registration_status;
+        const step = res.user?.registration_step || 0;
+        if (status === 'complete') {
+          navigate('/merchant/dashboard');
+        } else if (step === 0) {
+          navigate('/auth/merchant/register');
+        } else if (step === 1) {
+          navigate(`/auth/merchant/register/step2/${res.user.id}`);
+        } else if (step === 2) {
+          const merchantId = res.user?.merchant?.id;
+          if (merchantId) {
+            navigate(`/auth/merchant/register/step3/${merchantId}`);
+          } else {
+            navigate(`/auth/merchant/register/step2/${res.user.id}`);
+          }
+        } else {
+          navigate('/auth/merchant/register');
+        }
+      } else {
+        navigate('/customer/dashboard');
+      }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Invalid credentials');
     } finally {

@@ -6,6 +6,7 @@ import ErrorMessage from '../../components/ui/ErrorMessage';
 import StatusBadge from '../../components/ui/StatusBadge';
 import { ArrowLeft, DollarSign, User, FileText, Star, Play, CheckCircle, MapPin, Phone } from 'lucide-react';
 import toast from 'react-hot-toast';
+import PaymentSection from '../../components/ui/PaymentSection';
 
 const STEPS = ['pending', 'accepted', 'in_progress', 'completed'];
 const STEP_LABELS = { pending: 'Pending', accepted: 'Accepted', in_progress: 'In Progress', completed: 'Completed' };
@@ -166,12 +167,7 @@ export default function MerchantBookingDetailPage() {
         )}
 
         {booking.status === 'completed' && (
-          <div className="mt-6 pt-4 border-t">
-            <div className="flex items-center gap-2 text-green-700 bg-green-50 rounded-lg p-3">
-              <CheckCircle className="h-5 w-5" />
-              <span className="text-sm font-medium">Work completed. Awaiting customer review.</span>
-            </div>
-          </div>
+          <PaymentSection bookingId={booking.id} role="merchant" />
         )}
       </div>
 

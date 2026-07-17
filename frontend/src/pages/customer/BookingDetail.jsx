@@ -8,6 +8,7 @@ import StatusBadge from '../../components/ui/StatusBadge';
 import { ArrowLeft, DollarSign, User, FileText, Star, MapPin, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useState } from 'react';
+import PaymentSection from '../../components/ui/PaymentSection';
 
 const STEPS = ['pending', 'accepted', 'in_progress', 'completed'];
 const STEP_LABELS = { pending: 'Pending', accepted: 'Accepted', in_progress: 'In Progress', completed: 'Completed' };
@@ -157,6 +158,10 @@ export default function CustomerBookingDetail() {
               <FileText className="h-3.5 w-3.5" /> {serviceRequest.title || `Request #${serviceRequest.id}`}
             </button>
           </div>
+        )}
+
+        {booking.status === 'completed' && (
+          <PaymentSection bookingId={booking.id} role="customer" />
         )}
 
         {booking.status === 'completed' && (

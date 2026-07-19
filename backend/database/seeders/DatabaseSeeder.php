@@ -22,6 +22,21 @@ class DatabaseSeeder extends Seeder
 
         // $this->call(ArticalSeeder::class);
         
-        $this->call([MerchantSeeder::class, MerchantServiceCategorySeeder::class, RoleSeeder::class]);
+        // $this->call([MerchantSeeder::class, MerchantServiceCategorySeeder::class, RoleSeeder::class]);
+
+         $this->call([
+            // Must create service category IDs 1-95.
+            // ServiceCategorySeeder::class,
+
+            // Your existing seeders that create users 1-7
+            // and their merchant profiles.
+            // UserSeeder::class,
+            // MerchantSeeder::class,
+
+            // New seeders — keep this exact relative order.
+            MerchantSeederV2::class,
+            MerchantLocationSeeder::class,
+            MerchantServiceCategorySeederV2::class,
+        ]);
     }
 }

@@ -186,7 +186,7 @@ class RecommendationService
                 $data['score'] = $this->calculateRecommendationScore($distance, $merchant->avg_rating ?? 0);
             } else {
                 $data['distance_km'] = null;
-                $data['score'] = ($merchant->avg_rating ?? 0) / 5 * 60;
+                $data['score'] = ($merchant->avg_rating ?? 0) / 5 * 100;
             }
 
             return $data;

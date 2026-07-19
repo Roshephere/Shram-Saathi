@@ -7,6 +7,7 @@ use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
 class UserSeeder extends Seeder
 {
     /**
@@ -14,15 +15,6 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        // Create a default admin user
-        // User::firstOrCreate([
-        //     'name' => 'Admin User',
-        //     'email' => 'test@example.com',
-        //     'password' => Hash::make('password'), // Change this to a secure password
-        //     'status' => 1, // Active status
-        // ]);
-
-
         $users = [
             [
                 'name' => 'John Doe',
@@ -33,6 +25,7 @@ class UserSeeder extends Seeder
                 'registration_step' => 3,
                 'registration_status' => 'complete',
                 'registration_completed_at' => now(),
+                'role' => 'worker',
             ],
             [
                 'name' => 'Jane Smith',
@@ -43,6 +36,7 @@ class UserSeeder extends Seeder
                 'registration_step' => 3,
                 'registration_status' => 'complete',
                 'registration_completed_at' => now(),
+                'role' => 'worker',
             ],
             [
                 'name' => 'Michael Brown',
@@ -53,6 +47,7 @@ class UserSeeder extends Seeder
                 'registration_step' => 3,
                 'registration_status' => 'complete',
                 'registration_completed_at' => now(),
+                'role' => 'customer',
             ],
             [
                 'name' => 'Emily Davis',
@@ -63,6 +58,7 @@ class UserSeeder extends Seeder
                 'registration_step' => 3,
                 'registration_status' => 'complete',
                 'registration_completed_at' => now(),
+                'role' => 'customer',
             ],
             [
                 'name' => 'David Wilson',
@@ -73,6 +69,7 @@ class UserSeeder extends Seeder
                 'registration_step' => 3,
                 'registration_status' => 'complete',
                 'registration_completed_at' => now(),
+                'role' => 'worker',
             ],
             [
                 'name' => 'Sarah Johnson',
@@ -83,11 +80,27 @@ class UserSeeder extends Seeder
                 'registration_step' => 3,
                 'registration_status' => 'complete',
                 'registration_completed_at' => now(),
+                'role' => 'worker',
+            ],
+            [
+                'name' => 'Admin User',
+                'email' => 'admin@example.com',
+                'password' => Hash::make('password'),
+                'phone' => '9800000000',
+                'status' => '1',
+                'registration_step' => 3,
+                'registration_status' => 'complete',
+                'registration_completed_at' => now(),
+                'role' => 'admin',
             ],
         ];
 
-        foreach ($users as $user) {
-            User::create($user);
+        foreach ($users as $userData) {
+            $role = $userData['role'] ?? 'customer';
+            unset($userData['role']);
+
+            $user = User::create($userData);
+            $user->assignRole($role);
         }
     }
 }

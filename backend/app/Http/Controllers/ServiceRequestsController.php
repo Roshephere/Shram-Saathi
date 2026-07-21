@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreServiceRequestRequest;
 use App\Http\Requests\UpdateServiceRequestRequest;
-use App\Models\ServiceRequests;
+use App\Models\ServiceRequest;
 use App\Models\UserLocation;
 use App\Services\ServiceRequestService;
 use App\Traits\ApiResponse;
@@ -125,7 +125,7 @@ class ServiceRequestsController extends Controller
     public function update(UpdateServiceRequestRequest $request, int $id): JsonResponse
     {
         try {
-            $serviceRequest = ServiceRequests::findOrFail($id);
+            $serviceRequest = ServiceRequest::findOrFail($id);
 
             // Check authorization
             if ($serviceRequest->user_id !== auth()->id()) {
@@ -152,7 +152,7 @@ class ServiceRequestsController extends Controller
     public function destroy(int $id): JsonResponse
     {
         try {
-            $serviceRequest = ServiceRequests::findOrFail($id);
+            $serviceRequest = ServiceRequest::findOrFail($id);
 
             // Check authorization
             if ($serviceRequest->user_id !== auth()->id()) {

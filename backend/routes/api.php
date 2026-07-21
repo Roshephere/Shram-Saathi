@@ -75,7 +75,7 @@ Route::get('give-worker-role', function () {
 });
 
 Route::middleware(['auth:sanctum'])->group(function () {
-    // Booking routes - RESTRUCTURED for marketplace model
+    // Booking routes 
     Route::middleware('auth:sanctum')->group(function () {
         // Merchant creates bid, Customer views bids
         Route::post('bookings', [BookingController::class, 'store']);

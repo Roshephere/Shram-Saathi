@@ -41,7 +41,7 @@ class MerchantController extends Controller
 
     public function show(Merchant $merchant)
     {
-        dd($merchant->load('serviceCategories'));
+        // dd($merchant->load('serviceCategories'));
         return response()->json([
             'merchant' => $merchant->load('serviceCategories'),
         ]);

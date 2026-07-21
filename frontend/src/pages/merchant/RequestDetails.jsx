@@ -6,7 +6,7 @@ import { bookingService } from '../../api/bookingService';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import ErrorMessage from '../../components/ui/ErrorMessage';
 import Modal from '../../components/ui/Modal';
-import { ArrowLeft, DollarSign, MapPin, Clock, User, Navigation } from 'lucide-react';
+import { ArrowLeft, DollarSign, MapPin, Clock, User, Navigation, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function MerchantRequestDetails() {
@@ -19,6 +19,13 @@ export default function MerchantRequestDetails() {
   const { data: request, isLoading, error, refetch } = useQuery({
     queryKey: ['merchant-request-detail', requestId],
     queryFn: () => requestService.getById(requestId),
+  });
+
+  const { data: myBids = [] } = useQuery({
+    queryKey: ['merchant-bids-check', requestId],
+    queryFn: () => bookingService.merchantBookings({ service_request_id: requestId })
+      .then((r) => Array.isArray(r.data) ? r.data : []),
+    enabled: !!requestId,
   });
 
   const openBidModal = () => {
@@ -51,7 +58,8 @@ export default function MerchantRequestDetails() {
   if (error) return <ErrorMessage message="Failed to load request" onRetry={refetch} />;
   if (!request) return <ErrorMessage message="Request not found" />;
 
-  const alreadyBid = request.status !== 'open';
+  const hasBidded = myBids.some((b) => ['bidding', 'accepted'].includes(b.status));
+  const requestClosed = request.status !== 'open';
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -101,12 +109,18 @@ export default function MerchantRequestDetails() {
       <div className="bg-white rounded-xl border p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-2">Submit Your Bid</h2>
         <p className="text-sm text-gray-600 mb-4">
-          {alreadyBid
-            ? 'This request is no longer accepting bids.'
-            : `Set your price and message the customer. Budget range: NPR ${Number(request.budget_min).toLocaleString()} - ${Number(request.budget_max).toLocaleString()}.`
+          {hasBidded
+            ? 'You have already placed a bid on this request. Waiting for the customer to respond.'
+            : requestClosed
+              ? 'This request is no longer accepting bids.'
+              : `Set your price and message the customer. Budget range: NPR ${Number(request.budget_min).toLocaleString()} - ${Number(request.budget_max).toLocaleString()}.`
           }
         </p>
-        {!alreadyBid && (
+        {hasBidded ? (
+          <div className="flex items-center gap-2 text-green-700 bg-green-50 rounded-lg px-4 py-2.5 text-sm font-medium">
+            <CheckCircle className="h-4 w-4" /> Bid Placed
+          </div>
+        ) : !requestClosed && (
           <button onClick={openBidModal}
             className="px-6 py-2.5 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 text-sm">
             Place Bid

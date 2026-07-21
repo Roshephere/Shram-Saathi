@@ -34,7 +34,7 @@ class RecommendationService
     public function getRecommendedWorkers(
         int $serviceRequestId,
         int $limit = 5,
-        float $maxDistance = 50 // km
+        float $maxDistance = 25 // km
     ) {
         $serviceRequest = ServiceRequest::with('userLocation', 'category')->findOrFail($serviceRequestId);
         
@@ -49,7 +49,7 @@ class RecommendationService
 
          // ─── GEOHASH PRE-FILTER ───────────────────────────────
         // Compute a geohash prefix based on search radius.
-        // For 50km → precision 4 (~39km cells), for 10km → precision 5 (~5km cells)
+        // For 25km → precision 4 (~39km cells), for 10km → precision 5 (~5km cells)
         // This cuts the dataset from thousands to hundreds BEFORE processes it.
         $prefixLength = GeoHash::precisionForRadius($maxDistance, $userLat);
         $userGeohashPrefix = substr(
@@ -125,8 +125,8 @@ class RecommendationService
     private function calculateRecommendationScore(float $distance, float $rating): float
     {
         // Distance score: closer = higher (0-40 points)
-        // Assuming max 50km, closer workers get more points
-        $distanceScore = max(0, 40 - ($distance / 50 * 40));
+        // Assuming max 25km, closer workers get more points
+        $distanceScore = max(0, 40 - ($distance / 25 * 40));
 
         // Rating score: higher rating = higher (0-60 points)
         $ratingScore = ($rating / 5) * 60;
@@ -137,7 +137,7 @@ class RecommendationService
     /**
      * Get workers by category, optionally filtered by distance when lat/lng provided
      */
-    public function getWorkersByCategory(int $categoryId, int $limit = 10, ?float $userLat = null, ?float $userLon = null, float $maxDistance = 50)
+    public function getWorkersByCategory(int $categoryId, int $limit = 10, ?float $userLat = null, ?float $userLon = null, float $maxDistance = 25)
     {
         $query = Merchant::with(['user', 'serviceCategories', 'locations'])
             ->whereHas('serviceCategories', function ($query) use ($categoryId) {

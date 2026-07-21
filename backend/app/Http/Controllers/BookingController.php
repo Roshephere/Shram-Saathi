@@ -187,7 +187,7 @@ class BookingController extends Controller
                 return $this->error('Only merchants can view their bookings.', 403);
             }
 
-            $bookings = $this->bookingService->getMerchantBookings($merchant->id, $request->only(['status']));
+            $bookings = $this->bookingService->getMerchantBookings($merchant->id, $request->only(['status', 'service_request_id']));
 
             return $this->success($bookings->items(), 'Merchant bookings retrieved successfully', 200, [
                 'pagination' => [

@@ -106,6 +106,10 @@ class BookingService
     {
         $query = Booking::where('merchant_id', $merchantId);
 
+        if (!empty($filters['service_request_id'])) {
+            $query->where('service_request_id', $filters['service_request_id']);
+        }
+
         if (!empty($filters['status'])) {
             $query->where('status', $filters['status']);
         } else {

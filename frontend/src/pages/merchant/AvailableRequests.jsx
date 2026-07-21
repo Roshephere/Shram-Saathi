@@ -1,12 +1,13 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { requestService } from '../../api/requestService';
+import { bookingService } from '../../api/bookingService';
 import { categoryService } from '../../api/categoryService';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import ErrorMessage from '../../components/ui/ErrorMessage';
 import EmptyState from '../../components/ui/EmptyState';
-import { Search, MapPin, DollarSign, Clock } from 'lucide-react';
+import { Search, MapPin, DollarSign, Clock, CheckCircle } from 'lucide-react';
 
 export default function AvailableRequests() {
   const navigate = useNavigate();
@@ -16,6 +17,16 @@ export default function AvailableRequests() {
     queryKey: ['available-categories'],
     queryFn: () => categoryService.getAvailable().then((d) => Array.isArray(d) ? d : []),
   });
+
+  const { data: myActiveBids = [] } = useQuery({
+    queryKey: ['merchant-active-bids'],
+    queryFn: () => bookingService.merchantBookings({ status: 'bidding' })
+      .then((r) => Array.isArray(r.data) ? r.data : []),
+  });
+
+  const biddedRequestIds = useMemo(() => {
+    return new Set(myActiveBids.map((b) => b.service_request_id));
+  }, [myActiveBids]);
 
   const queryParams = {};
   if (filters.category_id) queryParams.category_id = filters.category_id;
@@ -63,15 +74,22 @@ export default function AvailableRequests() {
           {requests.map((req) => (
             <div key={req.id} onClick={() => navigate(`/merchant/requests/${req.id}/details`)}
               className="bg-white rounded-xl border p-5 hover:shadow-md transition-shadow cursor-pointer">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="font-semibold text-gray-900">{req.title || 'Untitled'}</h3>
-                  <p className="text-sm text-gray-500 mt-1 line-clamp-2">{req.description}</p>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="font-semibold text-gray-900">{req.title || 'Untitled'}</h3>
+                    <p className="text-sm text-gray-500 mt-1 line-clamp-2">{req.description}</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0 ml-4">
+                    {biddedRequestIds.has(req.id) && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        <CheckCircle className="h-3 w-3" /> Bidded
+                      </span>
+                    )}
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      {req.status}
+                    </span>
+                  </div>
                 </div>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 shrink-0 ml-4">
-                  {req.status}
-                </span>
-              </div>
               <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5 text-sm text-gray-600">
                 {req.category && (
                   <span className="flex items-center gap-1">

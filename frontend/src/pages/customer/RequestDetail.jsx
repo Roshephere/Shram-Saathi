@@ -4,7 +4,9 @@ import { requestService } from '../../api/requestService';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import ErrorMessage from '../../components/ui/ErrorMessage';
 import StatusBadge from '../../components/ui/StatusBadge';
-import { ArrowLeft, DollarSign, MapPin, Calendar, Star } from 'lucide-react';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import { ArrowLeft, DollarSign, MapPin, Calendar, Star, XCircle } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export default function RequestDetail() {
   const { id } = useParams();
@@ -12,6 +14,7 @@ export default function RequestDetail() {
   const [request, setRequest] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [cancelOpen, setCancelOpen] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -28,6 +31,17 @@ export default function RequestDetail() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCancel = async () => {
+    try {
+      await requestService.delete(id);
+      toast.success('Service request cancelled');
+      loadData();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to cancel request');
+    }
+    setCancelOpen(false);
   };
 
   if (loading) return <LoadingSpinner text="Loading details..." />;
@@ -106,6 +120,24 @@ export default function RequestDetail() {
           </button>
         </div>
       )}
+
+      <div className="flex justify-end gap-3">
+        {request.status === 'open' && (
+          <button onClick={() => setCancelOpen(true)}
+            className="px-4 py-2 text-sm font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100">
+            <XCircle className="h-4 w-4 inline mr-1" /> Cancel Request
+          </button>
+        )}
+      </div>
+
+      <ConfirmDialog
+        open={cancelOpen}
+        onClose={() => setCancelOpen(false)}
+        onConfirm={handleCancel}
+        title="Cancel Request"
+        message="Are you sure you want to cancel this service request? This cannot be undone."
+        confirmLabel="Yes, Cancel"
+      />
     </div>
   );
 }

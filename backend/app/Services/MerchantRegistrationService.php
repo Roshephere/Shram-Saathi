@@ -37,6 +37,7 @@ class MerchantRegistrationService{
             $merchant = Merchant::create([
                 'user_id' => $userId,
                 'business_name' => $data['business_name'] ?? null,
+                'description' => $data['description'] ?? null,
                 'phone' => $data['phone'] ?? null,
                 'pan_no' => $data['pan_no'] ?? null,
                 'hourly_rate' => $data['hourly_rate'] ?? null,

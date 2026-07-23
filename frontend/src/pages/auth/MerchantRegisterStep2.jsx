@@ -13,7 +13,7 @@ export default function MerchantRegisterStep2() {
   const [categories, setCategories] = useState([]);
   const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
   const [categoryRates, setCategoryRates] = useState({});
-  const [form, setForm] = useState({ business_name: '', phone: '', pan_no: '' });
+  const [form, setForm] = useState({ business_name: '', phone: '', pan_no: '', description: '' });
   const [logo, setLogo] = useState(null);
   const [logoPreview, setLogoPreview] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -55,6 +55,7 @@ export default function MerchantRegisterStep2() {
       formData.append('business_name', form.business_name);
       if (form.phone) formData.append('phone', form.phone);
       if (form.pan_no) formData.append('pan_no', form.pan_no);
+      if (form.description) formData.append('description', form.description);
       if (logo) formData.append('logo', logo);
       selectedCategoryIds.forEach((id) => {
         formData.append('service_category_ids[]', id);
@@ -131,6 +132,12 @@ export default function MerchantRegisterStep2() {
             <label className="block text-sm font-medium text-gray-700 mb-1">PAN Number</label>
             <input type="text" value={form.pan_no} onChange={(e) => setForm({ ...form, pan_no: e.target.value })}
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none" rows={3}
+              placeholder="Tell us about your business, experience, and skills..." />
           </div>
 
           <div>

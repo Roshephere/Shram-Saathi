@@ -150,6 +150,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 // Recommendations
 Route::get('/recommendations/service-request/{serviceRequestId}', [RecommendationModelController::class, 'getForServiceRequest']);
 Route::get('/recommendations/category/{categoryId}', [RecommendationModelController::class, 'getByCategory']);
+Route::get('/recommendations/hybrid/{serviceRequestId}', [RecommendationModelController::class, 'getHybridForServiceRequest']);
 
 
 Route::get('auth/google', [GoogleAuthController::class, 'redirectToGoogle'])->name('auth.google.redirect');

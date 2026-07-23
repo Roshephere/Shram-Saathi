@@ -26,7 +26,7 @@ export default function RequestBids() {
 
   const { data: recommendations = [] } = useQuery({
     queryKey: ['recommendations', id],
-    queryFn: () => recommendationService.getForServiceRequest(id).then((d) => Array.isArray(d) ? d : []),
+    queryFn: () => recommendationService.getHybrid(id).then((d) => Array.isArray(d) ? d : []),
   });
 
   const { data: bids = [], isLoading: bidsLoading } = useQuery({

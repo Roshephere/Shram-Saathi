@@ -28,7 +28,7 @@ export default function Recommendations() {
     setError(null);
     setSelectedRequest(requestId);
     try {
-      const data = await recommendationService.getForServiceRequest(requestId);
+      const data = await recommendationService.getHybrid(requestId);
       setRecommendations(Array.isArray(data) ? data : []);
     } catch {
       setError('Recommendation endpoint not available yet');

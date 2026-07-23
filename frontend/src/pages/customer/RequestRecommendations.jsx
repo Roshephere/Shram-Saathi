@@ -45,7 +45,7 @@ export default function RequestRecommendations() {
       const reqData = await requestService.getById(id);
       setRequest(reqData);
       try {
-        const recData = await recommendationService.getForServiceRequest(id);
+        const recData = await recommendationService.getHybrid(id);
         setRecommendations(Array.isArray(recData) ? recData : []);
       } catch {
         setRecommendations([]);

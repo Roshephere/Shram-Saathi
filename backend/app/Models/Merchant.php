@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Merchant extends Model
 {
-    protected $fillable = ['user_id', 'business_name', 'phone', 'logo', 'pan_no', 'location', 'status', 'avg_rating', 'hourly_rate', 'extras', 'verified_at', 'verified_by'];
+    protected $fillable = ['user_id', 'business_name', 'description', 'phone', 'logo', 'pan_no', 'location', 'status', 'avg_rating', 'hourly_rate', 'extras', 'verified_at', 'verified_by'];
 
     protected $casts = [
         'extras' => 'array',

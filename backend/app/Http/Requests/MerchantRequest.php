@@ -35,6 +35,7 @@ class MerchantRequest extends FormRequest
             'logo'=> 'nullable|image|max:2048',
             'pan_no'=> 'nullable|string|max:20',
             'location'=> 'nullable|string|max:255',
+            'description'=> 'nullable|string|max:1000',
             'hourly_rate'=> 'nullable|numeric|min:0',
             'service_category_ids' => 'nullable|array',
             'service_category_ids.*' => 'exists:service_categories,id',

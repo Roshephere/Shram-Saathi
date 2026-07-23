@@ -35,6 +35,33 @@ class RecommendationModelController extends Controller
     }
 
     /**
+     * Get hybrid recommendations (geo+rating + TF-IDF content + collaborative filtering)
+     * GET /recommendations/hybrid/{serviceRequestId}
+     */
+    public function getHybridForServiceRequest($serviceRequestId, Request $request)
+    {
+        $maxDistance = $request->query('max_distance', 25);
+        $limit = $request->query('limit', 5);
+        $geoWeight = (float) $request->query('geo_weight', 0.5);
+        $contentWeight = (float) $request->query('content_weight', 0.3);
+        $cfWeight = (float) $request->query('cf_weight', 0.2);
+
+        $recommendations = $this->recommendationService->getHybridRecommendations(
+            $serviceRequestId,
+            $limit,
+            $maxDistance,
+            $geoWeight,
+            $contentWeight,
+            $cfWeight
+        );
+
+        return $this->success(
+            $recommendations,
+            'Hybrid recommendations retrieved'
+        );
+    }
+
+    /**
      * Get workers by category, optionally filtered by distance when location provided
      * GET /recommendations/category/{categoryId}
      */

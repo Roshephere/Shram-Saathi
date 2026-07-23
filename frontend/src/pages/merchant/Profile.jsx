@@ -17,7 +17,7 @@ export default function MerchantProfile() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [form, setForm] = useState({
-    business_name: '', phone: '', location: '', hourly_rate: '', pan_no: '',
+    business_name: '', phone: '', location: '', hourly_rate: '', pan_no: '', description: '',
   });
 
   const [locations, setLocations] = useState([]);
@@ -42,6 +42,7 @@ export default function MerchantProfile() {
         setMerchant(mine);
         setForm({
           business_name: mine.business_name || '',
+          description: mine.description || '',
           phone: mine.phone || '',
           location: mine.location || '',
           hourly_rate: mine.hourly_rate || '',
@@ -180,13 +181,19 @@ export default function MerchantProfile() {
           <input type="text" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })}
             className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" />
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">PAN Number</label>
-          <input type="text" value={form.pan_no} onChange={(e) => setForm({ ...form, pan_no: e.target.value })}
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Location (Text)</label>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">PAN Number</label>
+            <input type="text" value={form.pan_no} onChange={(e) => setForm({ ...form, pan_no: e.target.value })}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" rows={3}
+              placeholder="Tell us about your business, experience, and skills..." />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Location (Text)</label>
           <input type="text" value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })}
             className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
             placeholder="e.g., Kathmandu, Nepal" />

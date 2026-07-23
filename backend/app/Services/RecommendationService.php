@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\DB;
 
 class RecommendationService
 {
+    private ?ContentRecommendationService $contentService = null;
+    private ?CollaborativeFilteringService $cfService = null;
     /**
      * Calculate distance between two coordinates (Haversine formula)
      * Returns distance in kilometers
@@ -195,5 +197,67 @@ class RecommendationService
         ->sortByDesc('score')
         ->take($limit)
         ->values();
+    }
+
+    /**
+     * Hybrid recommendations: geo+rating + TF-IDF content + collaborative filtering
+     *
+     * Blend formula:
+     *   final_score = (geo_rating * w1) + (content_norm * w2) + (cf_score_norm * w3)
+     *
+     * Where w1 + w2 + w3 = 1.0, each score component normalized to 0-100
+     */
+    public function getHybridRecommendations(
+        int $serviceRequestId,
+        int $limit = 5,
+        float $maxDistance = 25,
+        float $geoWeight = 0.5,
+        float $contentWeight = 0.3,
+        float $cfWeight = 0.2
+    ) {
+        $serviceRequest = ServiceRequest::with('category')->find($serviceRequestId);
+        if (!$serviceRequest) return [];
+
+        $geoResults = $this->getRecommendedWorkers($serviceRequestId, $limit * 3, $maxDistance);
+
+        $this->contentService = $this->contentService ?? new ContentRecommendationService();
+        $contentResults = $this->contentService->getRecommendations($serviceRequest, $limit * 3);
+
+        $this->cfService = $this->cfService ?? new CollaborativeFilteringService();
+        $cfResults = $this->cfService->getRecommendationsForUser(
+            $serviceRequest->user_id,
+            $serviceRequest->category_id,
+            $limit * 3
+        );
+
+        $contentMap = [];
+        foreach ($contentResults as $cr) {
+            $contentMap[$cr['merchant_id']] = $cr['content_score'];
+        }
+
+        $hybrid = [];
+        foreach ($geoResults as $result) {
+            $merchantId = $result['merchant_id'];
+            $geoRatingScore = $result['score'] ?? 0;
+
+            $rawContentScore = $contentMap[$merchantId] ?? 0;
+            $contentScoreNormalized = $rawContentScore * 100;
+
+            $rawCfScore = $cfResults[$merchantId] ?? 0;
+            $cfScoreNormalized = ($rawCfScore / 5) * 100;
+
+            $finalScore = ($geoRatingScore * $geoWeight)
+                        + ($contentScoreNormalized * $contentWeight)
+                        + ($cfScoreNormalized * $cfWeight);
+
+            $result['geo_rating_score'] = round($geoRatingScore, 2);
+            $result['content_score'] = round($rawContentScore, 4);
+            $result['collaborative_score'] = round($rawCfScore, 4);
+            $result['score'] = round($finalScore, 2);
+            $hybrid[] = $result;
+        }
+
+        usort($hybrid, fn($a, $b) => $b['score'] <=> $a['score']);
+        return array_slice($hybrid, 0, $limit);
     }
 }

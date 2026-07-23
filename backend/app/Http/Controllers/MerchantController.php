@@ -14,6 +14,7 @@ class MerchantController extends Controller
         $validated = $request->validate([
             'user_id' => 'required|exists:users,id',
             'business_name' => 'nullable|string|max:255',
+            'description' => 'nullable|string|max:5000',
             'phone' => 'nullable|string|max:255',
             'pan_no' => 'nullable|string|max:255',
             'logo' => 'nullable|string|max:50',
@@ -51,6 +52,7 @@ class MerchantController extends Controller
     {
         $validated = $request->validate([
             'business_name' => 'nullable|string|max:255',
+            'description' => 'nullable|string|max:5000',
             'phone' => 'nullable|string|max:255',
             'pan_no' => 'nullable|string|max:255',
             'logo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
